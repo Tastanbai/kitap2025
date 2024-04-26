@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    <title>Регистрация</title>
+{% endblock title %}
+
+{% block header-info %}
+    <h1 class="text-center">Регистрация</h1>
+{% endblock header-info %}
+
+{% block content %}
+    <form action="{% url 'myapp:reg' %}" method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_name">{{ form.name.label }}</label>
+            {{ form.name }}
+            <span class="error_info">{{ form.name.errors.0 }}</span>
+        </div>
+
+
+        <div class="form-group">
+            <label for="id_pwd">{{ form.pwd.label }}</label>
+            {{ form.pwd }}
+            <span class="error_info">{{ form.pwd.errors.0 }}</span>
+        </div>
+
+
+        <div class="form-group">
+            <label for="id_r_pwd">{{ form.r_pwd.label }}</label>
+            {{ form.r_pwd }}
+            <span class="error_info">{{ form.r_pwd.errors.0 }}</span>
+            <span class="error_info">{{ errors.0 }}</span>
+        </div>
+
+        <div class="form-group">
+            <label for="id_email">{{ form.email.label }}</label>
+            {{ form.email }}
+            <span class="error_info">{{ form.email.errors.0 }}</span>
+        </div>
+
+        <input type="submit" value="提交" class="btn btn-primary">
+
+    </form>
+{% endblock content %}
+
+
