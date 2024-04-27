@@ -11,13 +11,14 @@
 <thead>
 <tr>
     <th>ISBN</th>
-    <th>Name</th>
-    <th>Author</th>
+    <th>Имя книги</th>
+    <th>Автор</th>
+    <th>Год издания</th>
     <th>BBK</th>
-    <th>Quantity</th>
-    <th>Balance_quantity</th>
-    <th>Edit</th>
-    <th>delete</th>
+    <th>Количество</th>
+    <th>Остаток книг</th>
+    <th>Редактировать</th>
+    <th>Удалить</th>
 </tr>
 </thead>
 <tbody>
@@ -26,6 +27,7 @@
         <td>{{ book.ISBN }}</td>
         <td>{{ book.name }}</td>
         <td>{{book.author}}</td>
+        <td>{{book.year_published}}</td>
         <td>{{ book.bbk}}</td>
         <td>{{ book.quantity }}</td>
         <td>{{ book.balance_quantity }}</td>

@@ -38,7 +38,7 @@ class BookForm(forms.ModelForm):
     class Meta:
         model = Book
         fields = (
-            'id', 'ISBN', 'name', 'bbk', 'quantity', 'balance_quantity', 'author'
+            'id', 'ISBN', 'name', 'bbk', 'quantity', 'balance_quantity', 'author', 'year_published'
         )
 
         labels = {
@@ -47,7 +47,8 @@ class BookForm(forms.ModelForm):
             'bbk': 'ББК',
             'quantity': 'Количество',
             'balance_quantity': 'Остаток',
-            'author': 'Автор' 
+            'author': 'Автор',
+            'year_published': 'Год издания'
         }
         widgets = {
             'ISBN': TextInput(attrs={'class': 'form-control'}),
@@ -55,7 +56,8 @@ class BookForm(forms.ModelForm):
             'author': TextInput(attrs={'class': 'form-control'}),
             'bbk': TextInput(attrs={'class': 'form-control'}),
             'quantity': NumberInput(attrs={'class': 'form-control'}),
-            'balance_quantity': NumberInput(attrs={'class': 'form-control'})
+            'balance_quantity': NumberInput(attrs={'class': 'form-control'}),
+            'year_published': NumberInput(attrs={'class': 'form-control'}),
         }
 
         error_messages = {
@@ -77,6 +79,9 @@ class BookForm(forms.ModelForm):
                 "required": "Поле остаток не может быть пустым",
             },
             'ISBN': {
+                "required": "Поле остаток не может быть пустым",
+            },
+            'year_published': {
                 "required": "Поле остаток не может быть пустым",
             }
         }

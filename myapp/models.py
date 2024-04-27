@@ -18,6 +18,7 @@ class ReturnedBook(models.Model):
     phone = models.CharField(max_length=15,null=True, verbose_name='Номер телефона')
     book_name = models.CharField(max_length=255,null=True, verbose_name='Название книги')
     quantity = models.PositiveIntegerField(null=True, verbose_name='Количество')
+    
 
     def __str__(self):
         return f"{self.book_name} returned by {self.user.username} on {self.return_date.strftime('%Y-%m-%d')}"
@@ -30,6 +31,7 @@ class Book(models.Model):
     bbk = models.CharField(max_length=100, verbose_name="BBK")
     quantity = models.IntegerField(verbose_name="Количество")
     balance_quantity = models.IntegerField(verbose_name="Остаток книг")
+    year_published = models.IntegerField(verbose_name='Год издания', null=True, blank=True)
 
     def __str__(self):
         return self.name
