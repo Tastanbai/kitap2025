@@ -369,3 +369,4 @@ def send_email(request):
             return HttpResponse("Запись не найдена", status=404)  # Возвращаем ошибку, если запись не найдена или не принадлежит пользователю
         return redirect('myapp:blacklist')
     return redirect('myapp:blacklist')
+
