@@ -1,0 +1,164 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Библиотека</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel='stylesheet'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> 
+    <link rel="icon" href="https://icon-icons.com/icons2/405/PNG/512/Books_40673.png" type="image/x-icon">
+    <!-- Добавьте ссылки на Bootstrap CSS и JS в ваш HTML-файл -->
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <style>
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 50px;
+        }
+        .btn_vertical a {
+            margin-bottom: 5px; /* Увеличиваем отступ между кнопками */
+            width: 100%;
+            padding: 10px; /* Увеличиваем внутренний отступ кнопки */
+            font-size: 14px; /* Изменяем размер текста кнопки */
+            text-align: center; /* Центрируем содержимое блока */
+            
+        }
+        .error_info {
+            font-weight: 400;
+            color: #dc3545;
+        }
+        .btn-danger {
+            color: #fff;
+            background-color: #dc3545;
+            border-color: #d92334;
+            padding: 8px 16px;
+            text-decoration: none;
+            font-size: 16px;
+            display: inline-block;
+        }
+        .btn-danger:hover {
+            background-color: #c1121f;
+            border-color: #a50e1c;
+        }
+        .fas {
+            margin-right: 5px;
+        }
+
+        nav {
+            background-color: #f0f0f0; /* Light grey background for the nav */
+            border-radius: 8px; /* Rounded corners for the nav */
+            margin: 20px; /* Adds margin around the nav for spacing */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        }
+        nav ul {
+            list-style: none; /* Removes bullet points from the list */
+            padding: 0; /* Removes padding */
+            margin: 0; /* Removes margin */
+            display: flex; /* Flexbox for horizontal layout */
+            justify-content: center; /* Center items horizontally */
+            align-items: center; /* Center items vertically */
+        }
+        nav ul li {
+            margin: 10px; /* Adds space between navigation items */
+        }
+        nav ul li a {
+            text-decoration: none; /* Removes underline from links */
+            color: #333; /* Dark grey color for text */
+            font-size: 16px; /* Sets the font size */
+            padding: 10px 20px; /* Padding for clickable area */
+        }
+        nav ul li a:hover, nav ul li a:focus {
+            background-color: #ddd; /* Light grey background on hover/focus */
+            border-radius: 4px; /* Rounded corners on hover/focus */
+        }
+        /* Центрирование содержимого страницы */
+.content-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh; /* Используйте минимальную высоту вьюпорта, чтобы элементы могли занимать всю доступную высоту */
+    padding: 20px; /* Добавляем внутренний отступ для отступов вокруг содержимого */
+}
+
+/* Стилизация формы загрузки */
+form {
+    width: 100%; /* Максимальная ширина формы */
+    max-width: 500px; /* Ограничиваем ширину формы, чтобы она не была слишком широкой */
+    margin: 0 auto; /* Автоматический маргин для центрирования формы */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Добавляем тень для лучшей визуализации */
+    padding: 20px; /* Внутренние отступы для поля ввода и кнопки */
+    background-color: #fff; /* Фоновый цвет формы */
+    border-radius: 8px; /* Скругление углов формы */
+}
+
+    </style>
+</head>
+<body> 
+
+    <div class="header-container">
+        <h2><span class="error_info">{{ request.user.username }}</span> Добро пожаловать в систему управления библиотекой</h2>
+        <span><a href="{% url 'myapp:logout' %}" class="btn btn-danger"><i class="fas fa-door-open"></i> Выйти из системы</a></span>
+    </div>
+
+    <header>
+        <nav>
+            <ul>
+                <li><a href="{% url 'myapp:index' %}">Библиотека</a></li>
+                <li><a href="{% url 'myapp:rent_book' %}">Прокат книг</a></li>
+                <li><a href="{% url 'myapp:blacklist' %}">Черный список </a></li>
+                <li><a href="{% url 'myapp:view_returned_books' %}">Для учета</a></li>
+                <li><a href="{% url 'myapp:excel' %}">Excel файл</a></li>
+            </ul>
+        </nav>
+    </header>   
+    <div id="alert-container"></div>
+
+    <div class="content-container">
+        <h1>Upload Excel File</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="file" required>
+            <button type="submit">Загрузить файл</button>
+        </form>
+    </div>
+    
+<script>
+    $(document).ready(function() {
+        // При клике на любую ссылку сортировки
+        $('.sorting-controls a').on('click', function(e) {
+            e.preventDefault(); // Отменяем стандартное поведение ссылки
+    
+            // Удаляем класс 'active' у всех ссылок
+            $('.sorting-controls a').removeClass('active');
+            // Добавляем класс 'active' только к кликнутой ссылке
+            $(this).addClass('active');
+    
+            // Тут ваш код для AJAX-запроса или перезагрузки страницы
+        });
+    });
+    </script>
+    <script>
+        $(document).ready(function() {
+            // Проверяем, есть ли сообщение для отображения
+            var message = "{{ message }}";
+            var error = "{{ error }}";
+        
+            if (message) {
+                $('#alert-container').html('<div class="alert alert-success alert-dismissible fade show" role="alert">' + message + 
+                '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
+            }
+        
+            if (error) {
+                $('#alert-container').html('<div class="alert alert-danger alert-dismissible fade show" role="alert">' + error + 
+                '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
+            }
+        });
+        </script>
+        
+</div>
+</body>
+</html> 

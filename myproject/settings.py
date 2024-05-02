@@ -158,9 +158,9 @@ STATICFILES_DIRS = [
 STATIC_ROOT=os.path.join(BASE_DIR, 'staticfiles_build', 'static')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'kitap-nomad.kz'
+EMAIL_HOST = 'oqz.kz'
 EMAIL_PORT = 465
 EMAIL_USE_SSL = True 
 EMAIL_USE_TLS = False
-EMAIL_HOST_USER = 'sms@kitap-nomad.kz'
+EMAIL_HOST_USER = 'kitaphana@oqz.kz'
 EMAIL_HOST_PASSWORD = '1858644Oo@'

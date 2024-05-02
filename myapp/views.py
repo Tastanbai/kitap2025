@@ -211,7 +211,7 @@ def add_publish(request):
             send_mail(
                 'Подтверждение аренды книги',
                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книгу '{publish_instance.book.name}' на дату {publish_instance.date_out}. Возврат до {publish_instance.date_in}.",
-                'sms@kitap-nomad.kz',  # Измените на ваш активный email
+                'kitaphana@oqz.kz',  # Измените на ваш активный email
                 [recipient_email],
                 fail_silently=False,
             )
@@ -361,7 +361,7 @@ def send_email(request):
                 send_mail(
                     'Истек срок возврата',
                     f'У вас есть просроченные записи, пожалуйста, верните книгу {publish.book.name} как можно скорее.',
-                    'sms@kitap-nomad.kz',
+                    'kitaphana@oqz.kz',
                     [publish.email],
                     fail_silently=False,
                 )
@@ -370,3 +370,17 @@ def send_email(request):
         return redirect('myapp:blacklist')
     return redirect('myapp:blacklist')
 
+
+from .utils import create_books_from_excel
+
+
+@login_required
+def excel(request):
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            file = request.FILES['file']
+            create_books_from_excel(file, request.user)
+            return render(request, 'myapp/excel.html', {'message': 'Excel файл успешно загружен и обработан'})
+        else:
+            return render(request, 'myapp/excel.html', {'error': 'Файл не найден. Пожалуйста, загрузите файл.'})
+    return render(request, 'myapp/excel.html')

@@ -38,6 +38,11 @@
             {{ form.bbk }}
             <span class="error_info">{{ form.bbk.errors.0 }}</span>
         </div>
+        <div class="form-group">
+            <label for="id_year_published">{{ form.year_published.label }}</label>
+            {{ form.year_published }}
+            <span class="error_info">{{ form.year_published.errors.0 }}</span>
+        </div>
         
         <div class="form-group">
             <label for="id_quantity">{{ form.quantity.label }}</label>
