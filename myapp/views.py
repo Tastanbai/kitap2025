@@ -54,7 +54,8 @@ def index(request):
         books = books.filter(
             Q(name__icontains=search_query) | 
             Q(bbk__icontains=search_query)  |
-            Q(ISBN__icontains=search_query)
+            Q(ISBN__icontains=search_query) |
+            Q(author__icontains=search_query)
         )
 
     # Применяем сортировку
