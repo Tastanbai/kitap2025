@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-c+e!0t5&72fd3&!!-*rakq$j^-5x=c^tv^$brvz5lh*--10xmx
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['www.kitap-nomad.kz', 'kitap-nomad.kz']
+ALLOWED_HOSTS = ['kitap-nomad.kz']
 
 
 
@@ -165,3 +165,6 @@ EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 EMAIL_HOST_USER = 'kitaphana@oqz.kz'
 EMAIL_HOST_PASSWORD = '1858644Oo@'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
