@@ -7,12 +7,12 @@ def create_books_from_excel(file, user):
 
     for index, row in df.iterrows():
         Book.objects.create(
-            ISBN=row.get('Книжный номер', None),
-            author=row.get('Автор', None),
-            name=row.get('Название книги', None),
-            bbk=row.get('BBK', None),
-            quantity=row.get('Количество', None),
-            balance_quantity=row.get('Остаток книг', None),
-            year_published=row.get('Год издания', None),
-            user=user
-    )
+            ISBN=row['Книжный номер'],
+            author=row['Автор'],
+            name=row['Название книги'],
+            bbk=row['BBK'],
+            quantity=row['Количество'],
+            balance_quantity=row['Остаток книг'],
+            year_published=row['Год издания'],
+            user=user  # Теперь user определён в параметрах функции
+        )
