@@ -13,6 +13,20 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 
 
+# def user_login(request):
+#     if request.method == 'POST':
+#         form = LoginForm(request.POST)
+#         if form.is_valid():
+#             username = form.cleaned_data['name']
+#             password = form.cleaned_data['pwd']
+#             user = authenticate(request, username=username, password=password)
+#             if user is not None:
+#                 auth_login(request, user)
+#                 return redirect('myapp:index') 
+#     else:
+#         form = LoginForm()
+#     return render(request, 'myapp/login.html', {'form': form})
+
 def user_login(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -21,11 +35,16 @@ def user_login(request):
             password = form.cleaned_data['pwd']
             user = authenticate(request, username=username, password=password)
             if user is not None:
-                auth_login(request, user)
-                return redirect('myapp:index') 
+                # Проверка наличия галочки согласия
+                if 'agree' in request.POST:
+                    auth_login(request, user)
+                    return redirect('myapp:index')
+                else:
+                    form.add_error(None, 'Вы должны согласиться с условиями перед входом в систему.')
     else:
         form = LoginForm()
     return render(request, 'myapp/login.html', {'form': form})
+
 
 def logout(request):
     auth.logout(request)
