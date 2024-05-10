@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-    <title>Страница входа в систему</title>
+    Страница входа в систему
 {% endblock title %}
 
 {% block header-info %}
@@ -9,28 +9,34 @@
 {% endblock header-info %}
 
 {% block content %}
-    <form action="{% url 'myapp:login' %}" method="post" novalidate>
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="id_name">{{ form.name.label }}</label>
-            {{ form.name }}
-            <span class="error_info">{{ form.name.errors.0 }}</span>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form action="{% url 'myapp:login' %}" method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">{{ form.name.label }}</label>
+                        {{ form.name }}
+                        <span class="text-danger">{{ form.name.errors.0 }}</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_pwd" class="form-label">{{ form.pwd.label }}</label>
+                        <input type="password" name="pwd" id="id_pwd" class="form-control">
+                        <span class="text-danger">{{ form.pwd.errors.0 }}</span>
+                        <span class="text-danger">{{ errors.0 }}</span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="agree" id="agree" required class="form-check-input">
+                        <label for="agree" class="form-check-label">Я согласен на обработку персональных данных в соответствии с <a href="https://armada-service.kz/policy">Политикой конфиденциальности</a>.</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
         </div>
-
-
-        <div class="form-group">
-            <label for="id_pwd">{{ form.pwd.label }}</label>
-            <input type="password" name="pwd" id="id_pwd" class="form-control">
-            <span class="error_info">{{ form.pwd.errors.0 }}</span>
-            <span class="error_info">{{ errors.0 }}</span>
-        </div>
-        
-
-        <div class="form-check">
-            <input type="checkbox" name="agree" id="agree" required>
-            <label for="agree">Я согласен на обработку персональных данных в соответствии с <a href="https://armada-service.kz/policy">Политикой конфиденциальности</a>.</label>
-        </div>
-
-        <input type="submit" value="Submit" class="btn btn-primary">
-    </form>
+    </div>
 {% endblock content %}
+
+

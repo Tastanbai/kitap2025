@@ -24,14 +24,14 @@ class ReturnedBook(models.Model):
         return f"{self.book_name} returned by {self.user.username} on {self.return_date.strftime('%Y-%m-%d')}"
 
 class Book(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
-    ISBN=models.CharField(max_length=255, verbose_name='Книжный номер', null=True)
-    author = models.CharField(max_length=255, verbose_name='Автор', null=True)
-    name = models.CharField(max_length=255, verbose_name='Название книги')
-    bbk = models.CharField(max_length=100, verbose_name="BBK")
-    quantity = models.IntegerField(verbose_name="Количество")
-    balance_quantity = models.IntegerField(verbose_name="Остаток книг")
-    year_published = models.IntegerField(verbose_name='Год издания', null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=False)
+    ISBN=models.CharField(max_length=255, verbose_name='Книжный номер', null=True, blank=False)
+    author = models.CharField(max_length=255, verbose_name='Автор', null=True, blank=False)
+    name = models.CharField(max_length=255, verbose_name='Название книги', blank=False)
+    bbk = models.CharField(max_length=100, verbose_name="BBK", blank=False)
+    quantity = models.IntegerField(verbose_name="Количество", blank=False)
+    balance_quantity = models.IntegerField(verbose_name="Остаток книг", blank=False)
+    year_published = models.IntegerField(verbose_name='Год издания', null=True, blank=False)
 
     def __str__(self):
         return self.name

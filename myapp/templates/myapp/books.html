@@ -1,39 +1,44 @@
-<a href="{% url 'myapp:add_book' %}" class="btn btn-info btn_vertical">Добавить книги</a>  
-<div class="btn btn-info btn_vertical">
-    {% comment %} <a href="{% url 'myapp:index' %}?sort=id" class="{% if current_sort == 'ISBN' %}active{% endif %}">Сортировать по ISBN</a> | {% endcomment %}
-    <a href="{% url 'myapp:index' %}?sort=name" class="{% if current_sort == 'name' %}active{% endif %}">Сортировать по имени</a> |
-    <a href="{% url 'myapp:index' %}?sort=quantity" class="{% if current_sort == 'quantity' %}active{% endif %}">Сортировать по количеству</a> |
-    <a href="{% url 'myapp:index' %}?sort=balance_quantity" class="{% if current_sort == 'balance_quantity' %}active{% endif %}">Сортировать по доступному количеству</a>
+<div class="container mt-4">
+            <form id="books-form" method="POST" action="{% url 'myapp:delete_books' %}">
+                {% csrf_token %}
+                <input type="hidden" name="ids" id="selected-books" value="">
+                <a href="{% url 'myapp:add_book' %}" class="btn btn-info me-2">Добавить книги</a>
+                <button type="button" class="btn btn-info me-2" onclick="submitFormWithSelectedBooks()">Удалить выбранные</button>
+                <div class="table-border">
+                <table id="books-table" class="table display" style="width:100%">
+                    <thead>
+                        <tr>
+                            
+                            <th data-sortable="false">Выбрать</th>
+                            <th>ISBN </th>
+                            <th>Название книги </th>
+                            <th >Автор </th>
+                            <th>Год издания </th>
+                            <th>ББК </th>
+                            <th>Количество </th>
+                            <th>Остаток </th>
+                            <th data-sortable="false">Редактировать</th>
+                                                    
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for book in books %}
+                        <tr>
+                            <td><input type="checkbox" name="selected_books" class="book-checkbox" value="{{ book.pk }}"></td>
+                            <td>{{ book.ISBN }}</td>
+                            <td>{{ book.name }}</td>
+                            <td>{{ book.author }}</td>
+                            <td>{{ book.year_published }}</td>
+                            <td>{{ book.bbk }}</td>
+                            <td>{{ book.quantity }}</td>
+                            <td>{{ book.balance_quantity }}</td>
+                            <td><a href="edit/{{ book.pk }}/book" class="btn btn-primary">Редактировать</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            </form>
 </div>
 
 
-<table id="table" class="table table-bordered table-striped">
-<thead>
-<tr>
-    <th>ISBN</th>
-    <th>Имя книги</th>
-    <th>Автор</th>
-    <th>Год издания</th>
-    <th>BBK</th>
-    <th>Количество</th>
-    <th>Остаток книг</th>
-    <th>Редактировать</th>
-    <th>Удалить</th>
-</tr>
-</thead>
-<tbody>
-{% for book in books %}
-    <tr>
-        <td>{{ book.ISBN }}</td>
-        <td>{{ book.name }}</td>
-        <td>{{book.author}}</td>
-        <td>{{book.year_published}}</td>
-        <td>{{ book.bbk}}</td>
-        <td>{{ book.quantity }}</td>
-        <td>{{ book.balance_quantity }}</td>
-        <td><a href="edit/{{ book.pk }}/book">Редактировать</a></td>
-        <td><a href="delete/{{ book.pk }}/book">Удалить</a></td>
-    </tr>
-{% endfor %}
-</tbody>
-</table>

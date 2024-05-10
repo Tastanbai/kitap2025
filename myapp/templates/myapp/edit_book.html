@@ -1,8 +1,43 @@
 {% extends 'base.html' %}
 
+{% block css_file  %} 
+<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
+<style>
+    /* Стили для формы редактирования книги */
+    #fm {
+        max-width: 500px; /* Максимальная ширина формы */
+        margin: 0 auto; /* Центрирование формы на странице */
+        padding: 20px; /* Внутренний отступ формы */
+        border: 1px solid #ccc; /* Граница формы */
+        border-radius: 5px; /* Скругление углов формы */
+        background-color: #f9f9f9; /* Цвет фона формы */
+    }
+    
+    /* Стили для сообщения об ошибке */
+    #error {
+        color: red; /* Цвет текста сообщения об ошибке */
+        font-size: 18px; /* Размер шрифта сообщения об ошибке */
+        font-weight: bold; /* Жирный текст сообщения об ошибке */
+    }
+    
+    /* Стили для кнопки "Сохранить изменения" */
+    #edit-book {
+        background-color: #007bff; /* Цвет фона кнопки */
+        color: #fff; /* Цвет текста кнопки */
+        border-color: #007bff; /* Цвет границы кнопки */
+        margin-top: 10px; /* Верхний отступ кнопки */
+    }
+    
+    #edit-book:hover {
+        background-color: #0056b3; /* Цвет фона кнопки при наведении */
+        border-color: #0056b3; /* Цвет границы кнопки при наведении */
+    }
+    
+</style>
+{% endblock  %}
 
 {% block title %}
-    <title>Редактирование книги</title>
+    Редактирование книги
 {% endblock title %}
 
 {% block header-info %}
@@ -11,7 +46,7 @@
 {% endblock header-info %}
 
 {% block content %}
-    <form id="fm">
+    <form id="fm" >
         {% csrf_token %}
         <span id="error"></span>
 
@@ -56,35 +91,10 @@
             <span class="error_info">{{ form.balance_quantity.errors.0 }}</span>
         </div>
         
-        <input type="button" value="Изменить" class="btn btn-default" id="edit-book">
-    </form>
+        <input type="button" value="Сохранить изменения" class="btn btn-default" id="edit-book">
+    </form> 
 {% endblock content %}
 
-
 {% block script %}
-    <script src="/static/js/jquery-3.2.1.min.js"></script>
-    <script>
-        $('#edit-book').click(function () {
-            $.ajax({
-                url: '',
-                type: 'post',
-                dataType: 'JSON',
-                data: $('#fm').serialize(),
-                success: function (data) {
-                    if (data.status === 'true') {
-                        window.location.href = '/';
-                    } else {
-                        $('#error').html(data.message).css({
-                            'color': 'red',
-                            'font-size': '18px',
-                            'font-weight': 'bolder'
-                        });
-                    }
-                }
-            })
-        });
-
-        // 设置title不可编辑
-        $('#id_title').attr('readonly', true);
-    </script>
+    
 {% endblock script %} 

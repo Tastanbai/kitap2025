@@ -1,5 +1,6 @@
 import json
 from django.conf import settings
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect, HttpResponse, get_object_or_404
 from django.utils import timezone
 from .forms import LoginForm, RegForm, PublishForm, BookForm
@@ -11,21 +12,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.views.decorators.http import require_POST
 
-
-# def user_login(request):
-#     if request.method == 'POST':
-#         form = LoginForm(request.POST)
-#         if form.is_valid():
-#             username = form.cleaned_data['name']
-#             password = form.cleaned_data['pwd']
-#             user = authenticate(request, username=username, password=password)
-#             if user is not None:
-#                 auth_login(request, user)
-#                 return redirect('myapp:index') 
-#     else:
-#         form = LoginForm()
-#     return render(request, 'myapp/login.html', {'form': form})
 
 def user_login(request):
     if request.method == 'POST':
@@ -105,9 +93,22 @@ def add_book(request):
         }
         return render(request, 'myapp/add_book.html', context=context)
 
+def select_all_books(request):
+    if request.method == 'GET':
+        # Получаем все книги из базы данных
+        all_books = Book.objects.all()
+        
+        # Создаем список идентификаторов всех книг
+        selected_books_ids = [str(book.pk) for book in all_books]
 
+        # Возвращаем список идентификаторов в формате JSON
+        return JsonResponse({'selected_books_ids': selected_books_ids})
+    else:
+        # Если запрос не GET, возвращаем ошибку
+        return HttpResponse(status=400)
+    
 def edit_book(request, id):
-    book_obj = Book.objects.filter(pk=id).first()
+    book_obj = get_object_or_404(Book, pk=id)
     ret = {'status': None, 'message': None}
     if request.method == 'POST':
         form = BookForm(request.POST, instance=book_obj)
@@ -124,17 +125,16 @@ def edit_book(request, id):
         'form': form,
     }
     return render(request, 'myapp/edit_book.html', context=context)
+    
 
+@login_required
+def delete_books(request):
+    book_ids = request.POST.get('ids')
+    if book_ids:
+        book_ids_list = book_ids.split(',')
+        Book.objects.filter(id__in=book_ids_list).delete()
+    return HttpResponseRedirect(reverse('myapp:index'))
 
-# def delete_book(request, id):
-#     Book.objects.filter(id=id).delete()
-#     return redirect(reverse('myapp:index'))
-
-
-def delete_book(request, id):
-    book = get_object_or_404(Book, id=id)
-    book.delete()
-    return redirect('myapp:index')
 
 
 def reg(request):
@@ -178,37 +178,6 @@ def reg(request):
     return render(request, 'myapp/reg.html', context=context)
 
 
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         if form.is_valid():
-#             book = form.cleaned_data['book']
-#             quantity_requested = form.cleaned_data['quantity']
-
-#             # Проверяем, достаточно ли книг в наличии
-#             if book.balance_quantity < quantity_requested:
-#                 form.add_error('quantity', f"Только {book.balance_quantity} книг доступно.")
-#                 return render(request, 'myapp/add_publish.html', {'form': form})
-            
-#             publish_instance = form.save(commit=False)
-#             publish_instance.user = request.user
-#             publish_instance.save()
-
-#             return redirect(reverse('myapp:rent_book'))
-
-#         return render(request, 'myapp/add_publish.html', {'form': form})
-    
-#     else:
-#         form = PublishForm()
-#         form.fields['book'].queryset = user_books
-#         return render(request, 'myapp/add_publish.html', {'form': form})
-
-
-@login_required
 def add_publish(request):
     user_books = Book.objects.filter(user=request.user)
     if request.method == 'POST':
@@ -246,42 +215,10 @@ def add_publish(request):
         return render(request, 'myapp/add_publish.html', {'form': form})
 
 
-# def return_book(request, publish_id):
-#     # Получаем объект Publish по ID или возвращаем 404 ошибку, если такого нет
-#     publish = get_object_or_404(Publish, id=publish_id)
-#     # Удаляем объект, сигнал post_delete автоматически обновит balance_quantity
-#     publish.delete()
-#     # Перенаправляем пользователя на предыдущую страницу или главную страницу
-#     return redirect('myapp:rent_book')
-
-
-# @login_required
-# def return_book(request, publish_id):
-#     if request.method == 'POST':
-#         try:
-#             # Убеждаемся, что запись принадлежит текущему пользователю
-#             publish = Publish.objects.get(id=publish_id, user=request.user)
-
-#             # Удаляем объект, сигнал post_delete автоматически обновит balance_quantity
-#             publish.delete()
-
-#             # Отправляем email пользователю, если у записи есть email
-#             if publish.email:
-#                 send_mail(
-#                     'Возврат книги подтвержден',
-#                     f'Уважаемый(ая) ваша книга {publish.book.name} успешно возвращена. Спасибо, что пользуетесь нашей библиотекой!',
-#                     'sms@kitap-nomad.kz',
-#                     [publish.email],
-#                     fail_silently=False,
-#                 )
-#             return redirect('myapp:blacklist')  # Перенаправляем на страницу после успешного возврата
-#         except Publish.DoesNotExist:
-#             return HttpResponse("Запись не найдена или не принадлежит вам", status=404)
-#     return redirect('myapp:blacklist')  # Перенаправляем, если метод не POST или другие условия
-
 
 @login_required
 def return_book(request, publish_id):
+    
     # Получаем объект Publish, или возвращаем 404, если он не найден
     publish = get_object_or_404(Publish, id=publish_id, user=request.user)
 
@@ -313,7 +250,7 @@ def return_book(request, publish_id):
         # Удаляем объект Publish после успешного сохранения в ReturnedBook
         publish.delete()
         messages.success(request, 'Книга успешно возвращена и сохранена для учёта.')
-        return redirect('myapp:blacklist')
+        return redirect('myapp:rent_book')
     else:
         # Если метод запроса не POST, выводим сообщение об ошибке
         messages.error(request, 'Действие доступно только через POST запрос.')
@@ -385,6 +322,7 @@ def send_email(request):
                     [publish.email],
                     fail_silently=False,
                 )
+                messages.success(request, 'Сообщение успешно отправлено.')
         except Publish.DoesNotExist:
             return HttpResponse("Запись не найдена", status=404)  # Возвращаем ошибку, если запись не найдена или не принадлежит пользователю
         return redirect('myapp:blacklist')
@@ -404,3 +342,6 @@ def excel(request):
         else:
             return render(request, 'myapp/excel.html', {'error': 'Файл не найден. Пожалуйста, загрузите файл.'})
     return render(request, 'myapp/excel.html')
+
+
+

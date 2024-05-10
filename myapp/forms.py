@@ -38,7 +38,7 @@ class BookForm(forms.ModelForm):
     class Meta:
         model = Book
         fields = (
-            'id', 'ISBN', 'name', 'bbk', 'quantity', 'balance_quantity', 'author', 'year_published'
+            'ISBN', 'name', 'bbk', 'quantity', 'balance_quantity', 'author', 'year_published'
         )
 
         labels = {

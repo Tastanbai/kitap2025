@@ -1,34 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    {% block title %}
-        <title>Для учета</title>
-    {% endblock title %}
-
-    {% block css_file %}
-        <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
-        <link rel="stylesheet" href="/static/css/common.css">
-    {% endblock css_file %}
-
+    <title>{% block title %}Моя библиотека{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"> 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel='stylesheet'>
+    <link rel="icon" href="https://icon-icons.com/icons2/405/PNG/512/Books_40673.png" type="image/x-icon"> 
+    {% block css_file  %} {% endblock  %}
 </head>
-<body>
-<div class="header-info">
-    {% block header-info %}
-    {% endblock header-info %}
-</div>
+<body> 
+    {% block header-info %}  {% endblock header-info %}
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-8 col-md-offset-2">
-            {% block content %}
-            {% endblock content %}
-        </div>
+        {% block content %}
+        <!-- Содержимое страницы будет здесь -->
+        {% endblock %}
     </div>
-</div>
+    {% block scripts %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.11.3/i18n/Russian.json"></script>
 
+    {% endblock %}
+    
+    
+        <script>
+            $(document).ready(function() {
+                $('#books-table').DataTable({
+                    "language": {
+                        "url": "//cdn.datatables.net/plug-ins/1.11.3/i18n/Russian.json",
+                        "search": "Найти:",
+                        "sEmptyTable": "Совпадающих записей не найдено",
+                    },
+                    "paging": false,
+                    "info": false
+                });
+            });
+    
+    
+            function submitFormWithSelectedBooks() {
+                var selectedBooks = $('.book-checkbox:checked').map(function() {
+                    return this.value;
+                }).get();
+                if (selectedBooks.length > 0 && confirm('Вы уверены, что хотите удалить выбранные книги?')) {
+                    $('#selected-books').val(selectedBooks.join(','));
+                    $('#books-form').submit();
+                } else {
+                    alert('Пожалуйста, выберите хотя бы одну книгу.');
+                }
+            }
 
-{% block script %}
-{% endblock script %}
+            src="/static/js/jquery-3.2.1.min.js"
+            
+                $('#edit-book').click(function () {
+                    $.ajax({
+                        url: '',
+                        type: 'post',
+                        dataType: 'JSON',
+                        data: $('#fm').serialize(),
+                        success: function (data) {
+                            if (data.status === 'true') {
+                                window.location.href = '/';
+                            } else {
+                                $('#error').html(data.message).css({
+                                    'color': 'red',
+                                    'font-size': '18px',
+                                    'font-weight': 'bolder'
+                                });
+                            }
+                        }
+                    })
+                });
+        
+                // 设置title不可编辑
+                $('#id_title').attr('readonly', true);
+            
+                    $(document).ready(function() {
+                        // Проверяем, есть ли сообщение для отображения
+                        var message = "{{ message }}";
+                        var error = "{{ error }}";
+                    
+                        if (message) {
+                            $('#alert-container').html('<div class="alert alert-success alert-dismissible fade show" role="alert">' + message + 
+                            '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
+                        }
+                    
+                        if (error) {
+                            $('#alert-container').html('<div class="alert alert-danger alert-dismissible fade show" role="alert">' + error + 
+                            '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
+                        }
+                    });
+                   
+            
+        </script>
 </body>
 </html>

@@ -1,125 +1,126 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Библиотека</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel='stylesheet'>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <link rel="icon" href="https://icon-icons.com/icons2/405/PNG/512/Books_40673.png" type="image/x-icon">
-    <style>
-        .header-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 50px;
-        }
-        .btn_vertical a {
-            margin-bottom: 5px; /* Увеличиваем отступ между кнопками */
-            width: 100%;
-            padding: 10px; /* Увеличиваем внутренний отступ кнопки */
-            font-size: 14px; /* Изменяем размер текста кнопки */
-            text-align: center; /* Центрируем содержимое блока */
-            
-        }
-        .error_info {
-            font-weight: 400;
-            color: #dc3545;
-        }
-        .btn-danger {
-            color: #fff;
-            background-color: #dc3545;
-            border-color: #d92334;
-            padding: 8px 16px;
-            text-decoration: none;
-            font-size: 16px;
-            display: inline-block;
-        }
-        .btn-danger:hover {
-            background-color: #c1121f;
-            border-color: #a50e1c;
-        }
-        .fas {
-            margin-right: 5px;
-        }
+{% extends "base.html" %}
 
-        nav {
-            background-color: #f0f0f0; /* Light grey background for the nav */
-            border-radius: 8px; /* Rounded corners for the nav */
-            margin: 20px; /* Adds margin around the nav for spacing */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-        }
-        nav ul {
-            list-style: none; /* Removes bullet points from the list */
-            padding: 0; /* Removes padding */
-            margin: 0; /* Removes margin */
-            display: flex; /* Flexbox for horizontal layout */
-            justify-content: center; /* Center items horizontally */
-            align-items: center; /* Center items vertically */
-        }
-        nav ul li {
-            margin: 10px; /* Adds space between navigation items */
-        }
-        nav ul li a {
-            text-decoration: none; /* Removes underline from links */
-            color: #333; /* Dark grey color for text */
-            font-size: 16px; /* Sets the font size */
-            padding: 10px 20px; /* Padding for clickable area */
-        }
-        nav ul li a:hover, nav ul li a:focus {
-            background-color: #ddd; /* Light grey background on hover/focus */
-            border-radius: 4px; /* Rounded corners on hover/focus */
-        }
-    </style>
-</head>
-<body> 
+{% block title %}
+    Аренда книги
+{% endblock title %}
 
-    <div class="header-container">
-        <h2><span class="error_info">{{ request.user.username }}</span> Добро пожаловать в систему управления библиотекой</h2>
-        <span><a href="{% url 'myapp:logout' %}" class="btn btn-danger"><i class="fas fa-door-open"></i> Выйти из системы</a></span>
-    </div>
+{% block css_file %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
+<style>
+    .dataTables_filter {
+         float: none; /* Remove float, if needed */
+         display: inline-block; /* Display inline with the table */
+         vertical-align: top; /* Align to the top */
+         margin-left: 800px; /* Space from the table */
+     }
+     
+     #books-table {
+         border-collapse: collapse;
+         width: 100%;
+     }
+     
+     #books-table th,
+     #books-table td {
+         border: 1px solid #ddd;
+         padding: 8px;
+         text-align: left;
+     }
+     
+     #books-table th {
+         background-color: #f2f2f2;
+     }
+     
+     #books-table tbody tr:nth-child(even) {
+         background-color: #f9f9f9;
+     }
+     
+     #books-table tbody tr:hover {
+         background-color: #ddd;
+     }
+     .header-container {
+        background-color: #f0f0f0;
+        padding: 5px;
+        
+        font-size: 25px; /* Установка размера шрифта */
+    }
 
-    <header>
-        <nav>
-            <ul>
-                <li><a href="{% url 'myapp:index' %}">Библиотека</a></li>
-                <li><a href="{% url 'myapp:rent_book' %}">Прокат книг</a></li>
-                <li><a href="{% url 'myapp:blacklist' %}">Черный список </a></li>
-                <li><a href="{% url 'myapp:view_returned_books' %}">Для учета</a></li>
-                <li><a href="{% url 'myapp:excel' %}">Excel файл</a></li>
-            </ul>
-        </nav>
-    </header>
+    .header-container h2 {
+        color: #333;
+        margin-bottom: 10px;
+        margin-left: 380px;
+        display: inline-block;
+        font-size: 20px; /* Использование наследуемого размера шрифта */
+    }
 
-        <div class="container">
-            <div class="input-group mb-3">
-                <div class="container">
-                    <form method="GET" action="{% url 'myapp:rent_book' %}" class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="Search for books..." name="q" value="{{ request.GET.q }}">
-                        <button class="btn btn-outline-secondary" type="submit">Search</button>
-                    </form>
-                </div>
-            </div>
-            
+    .header-container .logout-btn {
+        margin-left: 340px;
+        margin-top: 15x; /* Добавляем отступ сверху */
+        font-size: 15px; /* Установка размера шрифта */
+    }
+    header {
+        background-color: #333; /* Цвет фона */
+        padding: 20px; /* Внутренний отступ */
+        text-align: center; /* Центрирование по горизонтали */
+    }
+    
+    nav ul {
+        list-style-type: none; /* Убираем маркеры списка */
+        padding: 0; /* Убираем внутренний отступ у списка */
+        margin: 0; /* Убираем внешний отступ у списка */
+        display: inline-block; /* Превращаем список в строчный блок для центрирования */
+    }
+    
+    nav ul li {
+        display: inline; /* Отображаем элементы списка в строку */
+    }
+    
+    nav ul li a {
+        color: white; /* Цвет ссылок */
+        text-decoration: none; /* Убираем подчеркивание у ссылок */
+        padding: 10px; /* Внутренний отступ у ссылок */
+    }
+    
+    nav ul li a:hover {
+        background-color: #555; /* Цвет фона при наведении на ссылку */
+    }
+    .dataTables_filter input {
+        width: 500px; /* Здесь задайте желаемую ширину */
+        height: 30px; /* Здесь задайте желаемую высоту */
+        box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.5); /* Добавляем светлую тень */
+        border-radius: 5px; /* Задаем закругленные углы */
+    }
+    
+    .dataTables_filter label {
+        display: inline-block; /* Размещаем текст рядом с полем ввода */
+        margin-right: 10px; /* Отступ справа */
+    }
+ </style>
+    
+{% endblock css_file %}
 
-{% block content_publishers_authors %}
+{% block content %}
+<div class="header-container">
+    <h2>Добро пожаловать в систему управления библиотекой, {{ request.user.username }}</h2>
+    <a href="{% url 'myapp:logout' %}" class="btn btn-danger logout-btn"><i class="fas fa-door-open"></i> Выйти из системы</a>
+</div>
+<header>
+    <nav>
+        <ul>
+            <li><a href="{% url 'myapp:index' %}">Библиотека</a></li>
+            <li><a href="{% url 'myapp:rent_book' %}">Прокат книг</a></li>
+            <li><a href="{% url 'myapp:blacklist' %}">Черный список</a></li>
+            <li><a href="{% url 'myapp:view_returned_books' %}">Для учета</a></li>
+            <li><a href="{% url 'myapp:excel' %}">Excel файл</a></li>
+        </ul>
+    </nav>
+</header>
+
+
 {% include 'myapp/publishes.html' %}
-{% endblock content_publishers_authors %}
-         
+{% endblock content %}
 
-<script>
-    $(document).ready(function() {
-        // При клике на любую ссылку сортировки
-        $('.sorting-controls a').on('click', function(e) {
-            e.preventDefault(); // Отменяем стандартное поведение ссылки
-    
-            // Удаляем класс 'active' у всех ссылок
-            $('.sorting-controls a').removeClass('active');
-            // Добавляем класс 'active' только к кликнутой ссылке
-            $(this).addClass('active');
-    
-            // Тут ваш код для AJAX-запроса или перезагрузки страницы
-        });
-    });
-    </script>
+
     </div>
 </body>
 </html> 

@@ -15,7 +15,8 @@ urlpatterns = [
     path('tastanbek28012002/', views.reg, name='reg'),
     path('add_book/', views.add_book, name='add_book'),
     path('add_publish/', views.add_publish, name='add_publish'),
-    path('return_book/<int:publish_id>/', views.return_book, name='return_book'),
-    re_path('edit/(\d+)/book', views.edit_book, name='edit_book'),
-    re_path('delete/(\d+)/book', views.delete_book, name='delete_book'),
+    path('rent_book/return/<int:publish_id>/book', views.return_book, name='return_book'),
+    path('edit/<int:id>/book/', views.edit_book, name='edit_book'),
+    path('delete_books/', views.delete_books, name='delete_books'),
+    path('select_all_books/', views.select_all_books, name='select_all_books'),
 ]

@@ -1,16 +1,48 @@
 {% extends 'base.html' %}
+{% block css_file  %} 
 
+<style>
+    #rent-form {
+        max-width: 500px; /* Максимальная ширина формы */
+        margin: 0 auto; /* Центрирование формы на странице */
+        padding: 20px; /* Внутренний отступ формы */
+        border: 1px solid #ccc; /* Граница формы */
+        border-radius: 5px; /* Скругление углов формы */
+        background-color: #f9f9f9; /* Цвет фона формы */
+    }
+
+    .form-group {
+        margin-bottom: 20px; /* Отступ между элементами формы */
+    }
+
+    .error_info {
+        color: red; /* Цвет сообщений об ошибках */
+    }
+
+    .btn-primary {
+        background-color: #007bff; /* Цвет фона кнопки */
+        color: #fff; /* Цвет текста кнопки */
+        border-color: #007bff; /* Цвет границы кнопки */
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3; /* Цвет фона кнопки при наведении */
+        border-color: #0056b3; /* Цвет границы кнопки при наведении */
+    }
+</style>
+{% endblock  %}
+ 
 {% block title %}
-    <title>Прокат книг</title>
+    Прокат книг
 {% endblock title %}
 
 {% block header-info %}
     <h3>Прокат книг</h3>
-    <a href="{% url 'myapp:index' %}" class="btn btn-default">На главную</a>
+    <a href="{% url 'myapp:rent_book' %}" class="btn btn-default">На главную</a>
 {% endblock header-info %}
 
 {% block content %}
-    <form action="{% url 'myapp:add_publish' %}" method="post" novalidate>
+    <form id="rent-form" action="{% url 'myapp:add_publish' %}" method="post" novalidate>
         {% csrf_token %}
 
         <div class="form-group">

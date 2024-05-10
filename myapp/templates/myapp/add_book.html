@@ -1,7 +1,44 @@
 {% extends 'base.html' %}
+{% block css_file  %} 
+<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
+<style>
+.form-group {
+    margin-bottom: 20px; /* Отступ между элементами формы */
+}
 
+.error_info {
+    color: red; /* Цвет сообщений об ошибках */
+}
+
+.btn-default {
+    background-color: #007bff; /* Цвет фона кнопки */
+    color: #fff; /* Цвет текста кнопки */
+    border-color: #007bff; /* Цвет границы кнопки */
+}
+
+.btn-default:hover {
+    background-color: #0056b3; /* Цвет фона кнопки при наведении */
+    border-color: #0056b3; /* Цвет границы кнопки при наведении */
+}
+
+/* Установка ширины формы */
+form {
+    max-width: 500px; /* Максимальная ширина формы */
+    margin: 0 auto; /* Центрирование формы на странице */
+}
+
+/* Установка отступов для заголовка и кнопки "Вернуться на главную" */
+.header-info {
+    margin-bottom: 100px; /* Отступ между заголовком и формой */
+}
+
+.header-info a {
+    margin-left: 20px; /* Отступ между кнопкой и заголовком */
+}
+</style>
+{% endblock  %}
 {% block title %}
-    <title>Добавление книги</title>
+    Добавление книги
 {% endblock title %}
 
 {% block header-info %}
@@ -60,4 +97,3 @@
     </form>
 
 {% endblock content %}
-
