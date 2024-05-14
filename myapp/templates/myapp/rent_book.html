@@ -39,25 +39,23 @@
          background-color: #ddd;
      }
      .header-container {
-        background-color: #f0f0f0;
-        padding: 5px;
-        
-        font-size: 25px; /* Установка размера шрифта */
+        display: flex;
+        justify-content: space-between; /* Распределяет пространство между элементами и раздвигает их на максимально возможное расстояние */
+        align-items: center; /* Выравнивает элементы по центру по вертикали */
+        padding: 10px 20px; /* Добавляет внутренние отступы для контейнера */
+        background-color: #f0f0f0; /* Фон контейнера, можно адаптировать под ваш дизайн */
+        width: 100%; /* Задает ширину контейнера равной ширине родительского элемента */
     }
-
+    
     .header-container h2 {
-        color: #333;
-        margin-bottom: 10px;
-        margin-left: 380px;
-        display: inline-block;
-        font-size: 20px; /* Использование наследуемого размера шрифта */
+        margin: 0; /* Убирает внешние отступы у заголовка */
+        flex-grow: 1; /* Заголовок займет все доступное пространство, которое не используют другие элементы */
     }
-
-    .header-container .logout-btn {
-        margin-left: 340px;
-        margin-top: 15x; /* Добавляем отступ сверху */
-        font-size: 15px; /* Установка размера шрифта */
+    
+    .btn.logout-btn {
+        white-space: nowrap; /* Предотвращает перенос текста кнопки на новую строку */
     }
+    
     header {
         background-color: #333; /* Цвет фона */
         padding: 20px; /* Внутренний отступ */
@@ -101,7 +99,7 @@
 
 {% block content %}
 <div class="header-container">
-    <h2>Добро пожаловать в систему управления библиотекой, {{ request.user.username }}</h2>
+    <h2>Система управления библиотекой Nomad kitaphana </h2>
     <a href="{% url 'myapp:logout' %}" class="btn btn-danger logout-btn"><i class="fas fa-door-open"></i> Выйти из системы</a>
 </div>
 <header>
