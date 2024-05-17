@@ -2,8 +2,13 @@
             <form id="books-form" method="POST" action="{% url 'myapp:delete_books' %}">
                 {% csrf_token %}
                 <input type="hidden" name="ids" id="selected-books" value="">
+                
                 <a href="{% url 'myapp:add_book' %}" class="btn btn-info me-2">Добавить книги</a>
                 <button type="button" class="btn btn-info me-2" onclick="submitFormWithSelectedBooks()">Удалить выбранные</button>
+                <button type="button" class="btn btn-info me-2" onclick="editSelectedBook()">Редактировать выбранную книгу</button>
+               
+                <div id="custom-search-container"></div>
+
                 <div class="table-border">
                 <table id="books-table" class="table display" style="width:100%">
                     <thead>
@@ -17,8 +22,7 @@
                             <th>ББК </th>
                             <th>Количество </th>
                             <th>Остаток </th>
-                            <th data-sortable="false">Редактировать</th>
-                                                    
+                                                   
                         </tr>
                     </thead>
                     <tbody>
@@ -32,7 +36,7 @@
                             <td>{{ book.bbk }}</td>
                             <td>{{ book.quantity }}</td>
                             <td>{{ book.balance_quantity }}</td>
-                            <td><a href="edit/{{ book.pk }}/book" class="btn btn-primary">Редактировать</a></td>
+                            
                         </tr>
                         {% endfor %}
                     </tbody>

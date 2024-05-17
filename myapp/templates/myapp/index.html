@@ -85,16 +85,17 @@
         background-color: #555; /* Цвет фона при наведении на ссылку */
     }
     .dataTables_filter input {
-        width: 500px; /* Здесь задайте желаемую ширину */
-        height: 30px; /* Здесь задайте желаемую высоту */
-        box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.5); /* Добавляем светлую тень */
-        border-radius: 5px; /* Задаем закругленные углы */
-    }
-    
-    .dataTables_filter label {
-        display: inline-block; /* Размещаем текст рядом с полем ввода */
-        margin-right: 10px; /* Отступ справа */
-    }
+    width: 250px; /* Задайте желаемую ширину */
+    height: 30px; /* Задайте желаемую высоту */
+    box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.5); /* Добавьте светлую тень */
+    border-radius: 5px; /* Задайте закругленные углы */
+}
+
+.dataTables_filter label {
+    display: inline-block; /* Разместите текст рядом с полем ввода */
+    margin-right: 10px; /* Отступ справа */
+    vertical-align: middle; /* Выравнивание по центру */
+}
  </style>
     
 {% endblock css_file %}

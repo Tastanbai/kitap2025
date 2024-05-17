@@ -24,6 +24,19 @@
     
     
         <script>
+
+    function editSelectedBook() {
+        var selectedBooks = document.querySelectorAll('input.book-checkbox:checked');
+        if (selectedBooks.length === 0) {
+            alert("Пожалуйста, выберите одну книгу для редактирования.");
+        } else if (selectedBooks.length > 1) {
+            alert("Вы можете редактировать только одну книгу за раз. Пожалуйста, выберите только одну книгу.");
+        } else {
+            var bookId = selectedBooks[0].value;
+            window.location.href = `/edit/${bookId}/book`;
+        }
+    }
+
             $(document).ready(function() {
                 $('#books-table').DataTable({
                     "language": {
@@ -34,7 +47,8 @@
                     "paging": false,
                     "info": false
                 });
-            });
+    });
+         
     
     
             function submitFormWithSelectedBooks() {
