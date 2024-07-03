@@ -87,18 +87,31 @@
             <span class="error_info">{{ form.phone.errors.0 }}</span>
         </div>
 
-        <div class="form-group">
-            <label for="id_book">{{ form.book.label }}</label>
-            {{ form.book }}
-            <span class="error_info">{{ form.book.errors.0 }}</span>
+        <div id="books-container">
+            <div class="book-group">
+                <div class="form-group">
+                    <label for="id_book">{{ form.book.label }}</label>
+                    {{ form.book }}
+                    <span class="error_info">{{ form.book.errors.0 }}</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_quantity">{{ form.quantity.label }}</label>
+                    {{ form.quantity }}
+                    <span class="error_info">{{ form.quantity.errors.0 }}</span>
+                </div>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label for="id_quantity">{{ form.quantity.label }}</label>
-            {{ form.quantity }}
-            <span class="error_info">{{ form.quantity.errors.0 }}</span>
-        </div>
-
+        <button type="button" id="add-book" class="btn btn-secondary">Добавить книгу</button>
         <input type="submit" value="Отправить" class="btn btn-primary">
     </form>
+
+    <script>
+        document.getElementById('add-book').addEventListener('click', function() {
+            var booksContainer = document.getElementById('books-container');
+            var bookGroup = document.querySelector('.book-group').cloneNode(true);
+            booksContainer.appendChild(bookGroup);
+        });
+    </script>
 {% endblock content %}

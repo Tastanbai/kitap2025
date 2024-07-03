@@ -178,41 +178,41 @@ def reg(request):
     return render(request, 'myapp/reg.html', context=context)
 
 
-def add_publish(request):
-    user_books = Book.objects.filter(user=request.user)
-    if request.method == 'POST':
-        form = PublishForm(request.POST)
-        form.fields['book'].queryset = user_books
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
 
-        if form.is_valid():
-            publish_instance = form.save(commit=False)
-            publish_instance.user = request.user
+#         if form.is_valid():
+#             publish_instance = form.save(commit=False)
+#             publish_instance.user = request.user
 
-            # Проверяем наличие книги перед сохранением
-            if publish_instance.book.balance_quantity < form.cleaned_data['quantity']:
-                form.add_error('quantity', f"Только {publish_instance.book.balance_quantity} книг доступно.")
-                return render(request, 'myapp/add_publish.html', {'form': form})
+#             # Проверяем наличие книги перед сохранением
+#             if publish_instance.book.balance_quantity < form.cleaned_data['quantity']:
+#                 form.add_error('quantity', f"Только {publish_instance.book.balance_quantity} книг доступно.")
+#                 return render(request, 'myapp/add_publish.html', {'form': form})
 
-            publish_instance.save()
+#             publish_instance.save()
 
-            # Отправляем уведомление на email, указанный в форме
-            recipient_email = form.cleaned_data['email']  # Убедитесь, что поле email корректно настроено в форме
-            send_mail(
-                'Подтверждение аренды книги',
-                f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книгу '{publish_instance.book.name}' на дату {publish_instance.date_out}. Возврат до {publish_instance.date_in}.",
-                'kitaphana@oqz.kz',  # Измените на ваш активный email
-                [recipient_email],
-                fail_silently=False,
-            )
+#             # Отправляем уведомление на email, указанный в форме
+#             recipient_email = form.cleaned_data['email']  # Убедитесь, что поле email корректно настроено в форме
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книгу '{publish_instance.book.name}' на дату {publish_instance.date_out}. Возврат до {publish_instance.date_in}.",
+#                 'kitaphana@oqz.kz',  # Измените на ваш активный email
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
 
-            return redirect(reverse('myapp:rent_book'))
+#             return redirect(reverse('myapp:rent_book'))
 
-        return render(request, 'myapp/add_publish.html', {'form': form})
+#         return render(request, 'myapp/add_publish.html', {'form': form})
     
-    else:
-        form = PublishForm()
-        form.fields['book'].queryset = user_books
-        return render(request, 'myapp/add_publish.html', {'form': form})
+#     else:
+#         form = PublishForm()
+#         form.fields['book'].queryset = user_books
+#         return render(request, 'myapp/add_publish.html', {'form': form})
 
 
 
@@ -345,3 +345,116 @@ def excel(request):
 
 
 
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
+
+#         if form.is_valid():
+#             publish_instances = []
+#             for book_data in request.POST.getlist('book'):
+#                 quantity = request.POST.getlist('quantity')[request.POST.getlist('book').index(book_data)]
+#                 book_instance = get_object_or_404(Book, pk=book_data)
+                
+#                 if book_instance.balance_quantity < int(quantity):
+#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно.")
+#                     return render(request, 'myapp/add_publish.html', {'form': form})
+
+#                 publish_instance = Publish(
+#                     user=request.user,
+#                     name=form.cleaned_data['name'],
+#                     iin=form.cleaned_data['iin'],
+#                     date_out=form.cleaned_data['date_out'],
+#                     date_in=form.cleaned_data['date_in'],
+#                     city=form.cleaned_data['city'],
+#                     email=form.cleaned_data['email'],
+#                     phone=form.cleaned_data['phone'],
+#                     book=book_instance,
+#                     quantity=quantity
+#                 )
+#                 publish_instances.append(publish_instance)
+#                 book_instance.balance_quantity -= int(quantity)
+#                 book_instance.save()
+
+#             Publish.objects.bulk_create(publish_instances)
+
+#             recipient_email = form.cleaned_data['email']
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
+#                 'kitaphana@oqz.kz',
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
+
+#             return redirect(reverse('myapp:rent_book'))
+
+#         return render(request, 'myapp/add_publish.html', {'form': form})
+    
+#     else:
+#         form = PublishForm()
+#         form.fields['book'].queryset = user_books
+#         return render(request, 'myapp/add_publish.html', {'form': form})
+@login_required
+def add_publish(request):
+    user_books = Book.objects.filter(user=request.user)
+    if request.method == 'POST':
+        form = PublishForm(request.POST)
+        form.fields['book'].queryset = user_books
+
+        if form.is_valid():
+            books_data = request.POST.getlist('book')
+            quantities = request.POST.getlist('quantity')
+            errors = False
+
+            for book_id, quantity in zip(books_data, quantities):
+                book_instance = get_object_or_404(Book, pk=book_id)
+                
+                if book_instance.balance_quantity < int(quantity):
+                    form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+                    errors = True
+
+            if errors:
+                return render(request, 'myapp/add_publish.html', {'form': form})
+
+            publish_instances = []
+            for book_id, quantity in zip(books_data, quantities):
+                book_instance = get_object_or_404(Book, pk=book_id)
+
+                publish_instance = Publish(
+                    user=request.user,
+                    name=form.cleaned_data['name'],
+                    iin=form.cleaned_data['iin'],
+                    date_out=form.cleaned_data['date_out'],
+                    date_in=form.cleaned_data['date_in'],
+                    city=form.cleaned_data['city'],
+                    email=form.cleaned_data['email'],
+                    phone=form.cleaned_data['phone'],
+                    book=book_instance,
+                    quantity=quantity
+                )
+                publish_instances.append(publish_instance)
+                book_instance.balance_quantity -= int(quantity)
+                book_instance.save()
+
+            Publish.objects.bulk_create(publish_instances)
+
+            recipient_email = form.cleaned_data['email']
+            send_mail(
+                'Подтверждение аренды книги',
+                f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
+                'kitaphana@oqz.kz',
+                [recipient_email],
+                fail_silently=False,
+            )
+
+            return redirect(reverse('myapp:rent_book'))
+
+        return render(request, 'myapp/add_publish.html', {'form': form})
+    
+    else:
+        form = PublishForm()
+        form.fields['book'].queryset = user_books
+        return render(request, 'myapp/add_publish.html', {'form': form})
