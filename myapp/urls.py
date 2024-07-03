@@ -7,6 +7,7 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),  
     path('', views.index, name='index'),
     path('excel/', views.excel, name='excel'),
+    path('excel_user/', views.excel_user, name='excel_user'),
     path('send-email/', views.send_email, name='send_email'),
     path('rent_book/', views.rent_book, name='rent_book'),
     path('blacklist/', views.blacklist, name='blacklist'),

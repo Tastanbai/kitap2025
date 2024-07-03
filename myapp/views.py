@@ -396,10 +396,212 @@ def excel(request):
 #     else:
 #         form = PublishForm()
 #         form.fields['book'].queryset = user_books
+# #         return render(request, 'myapp/add_publish.html', {'form': form})
+
+
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
+
+#         if form.is_valid():
+#             books_data = request.POST.getlist('book')
+#             quantities = request.POST.getlist('quantity')
+#             errors = False
+
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+                
+#                 if book_instance.balance_quantity < int(quantity):
+#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+#                     errors = True
+
+#             if errors:
+#                 return render(request, 'myapp/add_publish.html', {'form': form})
+
+#             publish_instances = []
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+
+#                 publish_instance = Publish(
+#                     user=request.user,
+#                     name=form.cleaned_data['name'],
+#                     iin=form.cleaned_data['iin'],
+#                     date_out=form.cleaned_data['date_out'],
+#                     date_in=form.cleaned_data['date_in'],
+#                     city=form.cleaned_data['city'],
+#                     email=form.cleaned_data['email'],
+#                     phone=form.cleaned_data['phone'],
+#                     book=book_instance,
+#                     quantity=quantity
+#                 )
+#                 publish_instances.append(publish_instance)
+#                 book_instance.balance_quantity -= int(quantity)
+#                 book_instance.save()
+
+#             Publish.objects.bulk_create(publish_instances)
+
+#             recipient_email = form.cleaned_data['email']
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
+#                 'kitaphana@oqz.kz',
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
+
+#             return redirect(reverse('myapp:rent_book'))
+
 #         return render(request, 'myapp/add_publish.html', {'form': form})
+    
+#     else:
+#         form = PublishForm()
+#         form.fields['book'].queryset = user_books
+#         return render(request, 'myapp/add_publish.html', {'form': form})
+
+# from django.shortcuts import render
+# from django.core.files.storage import FileSystemStorage
+# import pandas as pd
+
+# def excel_user(request):
+#     if request.method == 'POST' and request.FILES['file']:
+#         file = request.FILES['file']
+#         fs = FileSystemStorage()
+#         filename = fs.save(file.name, file)
+#         file_path = fs.path(filename)
+
+#         # Чтение Excel файла с помощью pandas
+#         try:
+#             df = pd.read_excel(file_path)
+#             # Проверка наличия столбца 'ФИО'
+#             if 'ФИО' in df.columns:
+#                 fio_list = df['ФИО'].tolist()
+#                 # Обработка списка ФИО
+#                 # Например, сохранение в базу данных или другая обработка
+#                 # ...
+#                 message = "Файл успешно загружен и обработан."
+#             else:
+#                 error = "В загруженном файле отсутствует столбец 'ФИО'."
+#         except Exception as e:
+#             error = f"Произошла ошибка при обработке файла: {str(e)}"
+
+#         # Удаление файла после обработки
+#         fs.delete(filename)
+
+#         if 'message' in locals():
+#             return render(request, 'myapp/excel_user.html', {'message': message})
+#         else:
+#             return render(request, 'myapp/excel_user.html', {'error': error})
+
+#     return render(request, 'myapp/excel_user.html')
+
+#---------------------------------------------------------------------------------------------------------------------------------------------
+from django.shortcuts import render, redirect, get_object_or_404
+from django.core.files.storage import FileSystemStorage
+import pandas as pd
+from myapp.models import Book, Publish
+from myapp.forms import PublishForm
+from django.contrib.auth.decorators import login_required
+
+def excel_user(request):
+    if request.method == 'POST' and request.FILES['file']:
+        file = request.FILES['file']
+        fs = FileSystemStorage()
+        filename = fs.save(file.name, file)
+        file_path = fs.path(filename)
+
+        try:
+            df = pd.read_excel(file_path)
+            if 'ФИО' in df.columns:
+                fio_list = df['ФИО'].tolist()
+                request.session['fio_list'] = fio_list
+                message = "Файл успешно загружен и обработан."
+            else:
+                error = "В загруженном файле отсутствует столбец 'ФИО'."
+        except Exception as e:
+            error = f"Произошла ошибка при обработке файла: {str(e)}"
+
+        fs.delete(filename)
+
+        if 'message' in locals():
+            return render(request, 'myapp/excel_user.html', {'message': message})
+        else:
+            return render(request, 'myapp/excel_user.html', {'error': error})
+
+    return render(request, 'myapp/excel_user.html')
+
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+#     fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
+
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
+
+#         if form.is_valid():
+#             books_data = request.POST.getlist('book')
+#             quantities = request.POST.getlist('quantity')
+#             errors = False
+
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+                
+#                 if book_instance.balance_quantity < int(quantity):
+#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+#                     errors = True
+
+#             if errors:
+#                 return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+
+#             publish_instances = []
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+
+#                 publish_instance = Publish(
+#                     user=request.user,
+#                     name=form.cleaned_data['name'],
+#                     iin=form.cleaned_data['iin'],
+#                     date_out=form.cleaned_data['date_out'],
+#                     date_in=form.cleaned_data['date_in'],
+#                     city=form.cleaned_data['city'],
+#                     email=form.cleaned_data['email'],
+#                     phone=form.cleaned_data['phone'],
+#                     book=book_instance,
+#                     quantity=quantity
+#                 )
+#                 publish_instances.append(publish_instance)
+#                 book_instance.balance_quantity -= int(quantity)
+#                 book_instance.save()
+
+#             Publish.objects.bulk_create(publish_instances)
+
+#             recipient_email = form.cleaned_data['email']
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
+#                 'kitaphana@oqz.kz',
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
+
+#             return redirect(reverse('myapp:rent_book'))
+
+#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+
+#     else:
+#         form = PublishForm()
+#         form.fields['book'].queryset = user_books
+#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+
+#---------------------------------------------------------------------------------------------------------------------------------------------
 @login_required
 def add_publish(request):
     user_books = Book.objects.filter(user=request.user)
+    fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
+
     if request.method == 'POST':
         form = PublishForm(request.POST)
         form.fields['book'].queryset = user_books
@@ -407,6 +609,7 @@ def add_publish(request):
         if form.is_valid():
             books_data = request.POST.getlist('book')
             quantities = request.POST.getlist('quantity')
+            name = form.cleaned_data['name']
             errors = False
 
             for book_id, quantity in zip(books_data, quantities):
@@ -417,7 +620,7 @@ def add_publish(request):
                     errors = True
 
             if errors:
-                return render(request, 'myapp/add_publish.html', {'form': form})
+                return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
 
             publish_instances = []
             for book_id, quantity in zip(books_data, quantities):
@@ -425,7 +628,7 @@ def add_publish(request):
 
                 publish_instance = Publish(
                     user=request.user,
-                    name=form.cleaned_data['name'],
+                    name=name,  # Используйте новое или выбранное ФИО
                     iin=form.cleaned_data['iin'],
                     date_out=form.cleaned_data['date_out'],
                     date_in=form.cleaned_data['date_in'],
@@ -444,7 +647,7 @@ def add_publish(request):
             recipient_email = form.cleaned_data['email']
             send_mail(
                 'Подтверждение аренды книги',
-                f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
+                f"Уважаемый {name}, вы успешно арендовали книги.",
                 'kitaphana@oqz.kz',
                 [recipient_email],
                 fail_silently=False,
@@ -452,9 +655,9 @@ def add_publish(request):
 
             return redirect(reverse('myapp:rent_book'))
 
-        return render(request, 'myapp/add_publish.html', {'form': form})
+        return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
     
     else:
         form = PublishForm()
         form.fields['book'].queryset = user_books
-        return render(request, 'myapp/add_publish.html', {'form': form})
+        return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
