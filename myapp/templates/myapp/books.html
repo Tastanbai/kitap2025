@@ -15,6 +15,7 @@
                         <tr>
                             
                             <th data-sortable="false">Выбрать</th>
+                            <th>№</th>
                             <th>ISBN </th>
                             <th>Название книги </th>
                             <th >Автор </th>
@@ -29,6 +30,7 @@
                         {% for book in books %}
                         <tr>
                             <td><input type="checkbox" name="selected_books" class="book-checkbox" value="{{ book.pk }}"></td>
+                            <td>{{ forloop.counter }}</td>
                             <td>{{ book.ISBN }}</td>
                             <td>{{ book.name }}</td>
                             <td>{{ book.author }}</td>

@@ -597,6 +597,7 @@ def excel_user(request):
 #         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
 
 #---------------------------------------------------------------------------------------------------------------------------------------------
+
 @login_required
 def add_publish(request):
     user_books = Book.objects.filter(user=request.user)
@@ -656,7 +657,6 @@ def add_publish(request):
             return redirect(reverse('myapp:rent_book'))
 
         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-    
     else:
         form = PublishForm()
         form.fields['book'].queryset = user_books
