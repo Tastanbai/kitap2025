@@ -1,15 +1,12 @@
 {% extends "base.html" %}
 
 {% block title %}
-Excel файл
+    Библиотека
 {% endblock title %}
 
 {% block css_file %}
-
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
 <style>
     .dataTables_filter {
          float: none; /* Remove float, if needed */
@@ -59,12 +56,14 @@ Excel файл
         white-space: nowrap; /* Предотвращает перенос текста кнопки на новую строку */
     }
     
+
+    
     header {
         background-color: #333; /* Цвет фона */
         padding: 20px; /* Внутренний отступ */
         text-align: center; /* Центрирование по горизонтали */
     }
-    
+     
     nav ul {
         list-style-type: none; /* Убираем маркеры списка */
         padding: 0; /* Убираем внутренний отступ у списка */
@@ -97,76 +96,16 @@ Excel файл
     margin-right: 10px; /* Отступ справа */
     vertical-align: middle; /* Выравнивание по центру */
 }
-    .file-operations-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* Центрирует дочерние элементы по вертикали */
-        gap: 30px; /* Расстояние между элементами загрузки и скачивания */
-        margin-top: 60px; /* Добавить верхний отступ для отделения от других элементов */
-    }
+
+.container {
+    max-width: 1110px;
+    margin: auto;
+}
+
+.add_button {
     
-    .download-section, .upload-section {
-        width: 100%; /* Занимает всю ширину контейнера */
-        display: flex;
-        justify-content: center; /* Центрирует содержимое по горизонтали */
-        padding: 30px; /* Отступы вокруг каждого раздела */
-    }
-    
-    .upload-section form {
-        width: 100%; /* Максимальная ширина формы */
-        max-width: 500px; /* Ограничиваем ширину формы, чтобы она не была слишком широкой */
-        margin: 0 auto; /* Автоматический маргин для центрирования формы */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Добавляем тень для лучшей визуализации */
-        padding: 20px; /* Внутренние отступы для поля ввода и кнопки */
-        background-color: #fff; /* Фоновый цвет формы */
-        border-radius: 8px; /* Скругление углов формы */
-    }
-    .content-container {
-        max-width: 600px;
-        margin: 20px auto;
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        background-color: #f9f9f9;
-    }
-    .content-container h1 {
-        color: #333;
-        font-size: 25px;
-        margin-left: 30px;
-    }
-    .content-container form {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .content-container input[type="file"] {
-        flex-grow: 1; /* Позволяет input расширяться и занимать доступное пространство */
-    }
-    .content-container button {
-        padding: 8px 16px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    .content-container button:hover {
-        background-color: #0056b3;
-    }
-    /* Стилизация формы загрузки */
-    form {
-        width: 100%; /* Максимальная ширина формы */
-        max-width: 500px; /* Ограничиваем ширину формы, чтобы она не была слишком широкой */
-        margin: 0 auto; /* Автоматический маргин для центрирования формы */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Добавляем тень для лучшей визуализации */
-        padding: 20px; /* Внутренние отступы для поля ввода и кнопки */
-        background-color: #fff; /* Фоновый цвет формы */
-        border-radius: 8px; /* Скругление углов формы */
-    }
-    .content-container input[type="file"] {
-        flex-grow: 1; /* Позволяет input расширяться и занимать доступное пространство */
-    }
+}
+
  </style>
     
 {% endblock css_file %}
@@ -189,41 +128,64 @@ Excel файл
         </ul>
     </nav>
 </header>
+<!-- Button to redirect to Add News Page -->
+<div class="container">
+    <a href="{% url 'myapp:add_news' %}" class="btn btn-success" style="margin-top: 20px;">Добавить запись</a>
+    <h1>Новости</h1>
+    <ul style="list-style: none; padding: 0;">
+        {% for article in news %}
+        <li style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+            <!-- Заголовок новости -->
+            <h2 style="font-size: 28px; margin-bottom: 10px;">{{ article.title }}</h2> <!-- Большой заголовок -->
+            
+            <!-- Тег новости под заголовком -->
+            <p style="color: gray; font-style: italic;">Тег: {{ article.tag }}</p> <!-- Тег новости, отдельно снизу -->
 
-{% if message %}
-    <div class="alert alert-success" role="alert">
-        {{ message }}
-    </div>
-{% endif %}
-{% if error %}
-    <div class="alert alert-danger" role="alert">
-        {{ error }}
-    </div>
-{% endif %}
+            <!-- Дата публикации -->
+            <p>Дата публикации: {{ article.publish_date }}</p> <!-- Дата публикации -->
+            
+            <!-- Текст новости -->
+            <p>{{ article.text|truncatewords:50 }}</p>
+            
+            <!-- Изображение -->
+            <img src="{{ article.photo.url }}" alt="{{ article.title }}" style="max-width: 100%; height: auto;">
 
+            <!-- Кнопки для редактирования и удаления -->
+            <a href="{% url 'myapp:edit_news' article.id %}" class="btn btn-warning">Редактировать</a>
+            <button class="btn btn-danger" onclick="showDeleteModal('{{ article.title }}', '{% url 'myapp:delete_news' article.id %}')">Удалить</button>
+        </li>
+        {% empty %}
+        <li>Нет новостей.</li>
+        {% endfor %}
+    </ul>
 
+    <!-- Модальное окно для подтверждения удаления -->
+    <div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5);">
+        <div style="max-width: 500px; margin: 100px auto; background: white; padding: 20px; border-radius: 10px;">
+            <h2>Удалить новость</h2>
+            <p>Вы действительно хотите удалить новость <strong id="newsTitle"></strong>?</p>
 
-    <div class="file-operations-container">
-        <div class="download-section">
-            <a href="/media/Шаблон для выгрузки.xlsx" download="Шаблон для выгрузки.xlsx" class="download-link">
-                <i class="fas fa-file-excel fa-3x"></i> <!-- Добавляем класс fa-3x для увеличения размера значка -->
-                Скачать Excel шаблон
-            </a>
+            <form id="deleteForm" method="POST" action="">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Удалить</button>
+                <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">Отмена</button>
+            </form>
         </div>
     </div>
-    
-
-   <div class="content-container">
-        <h1>Загрузка книг по шаблону</h1>
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="file" name="file" required>
-            <button type="submit">Загрузить файл</button>
-        </form>
-    </div> 
-     
-</div>    
 </div>
-{% endblock content %}
-</body>
-</html> 
+
+<script>
+    // Функция для показа модального окна
+    function showDeleteModal(newsTitle, deleteUrl) {
+        document.getElementById('newsTitle').innerText = newsTitle;  // Устанавливаем заголовок новости
+        document.getElementById('deleteForm').action = deleteUrl;  // Устанавливаем URL для удаления
+        document.getElementById('deleteModal').style.display = 'block';  // Показываем модальное окно
+    }
+
+    // Функция для скрытия модального окна
+    function hideDeleteModal() {
+        document.getElementById('deleteModal').style.display = 'none';  // Скрываем модальное окно
+    }
+</script>
+
+{% endblock content %}   

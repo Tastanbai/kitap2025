@@ -32,7 +32,7 @@ class LoginForm(forms.Form):
     )
 
 from django.forms import TextInput, NumberInput
-from .models import Book, Publish
+from .models import Book, Publish, News
 
 class BookForm(forms.ModelForm):
     class Meta:
@@ -234,4 +234,26 @@ class PublishForm(forms.ModelForm):
                 'invalid': 'Неправильное время',
                 "required": "Это поле обязательно для заполнения",
             }
+        }
+
+from django import forms
+from .models import News
+
+class NewsForm(forms.ModelForm):
+    class Meta:
+        model = News
+        fields = ['title', 'tag', 'text', 'photo', 'publish_date']  # Добавили поле publish_date
+        labels = {
+            'title': 'Заголовок',
+            'tag': 'Тег',
+            'text': 'Текст',
+            'photo': 'Фото',
+            'publish_date': 'Дата публикации',
+        }
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'tag': forms.TextInput(attrs={'class': 'form-control'}),
+            'text': forms.Textarea(attrs={'class': 'form-control'}),
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'publish_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),  # Виджет для выбора даты
         }

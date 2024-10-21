@@ -661,3 +661,48 @@ def add_publish(request):
         form = PublishForm()
         form.fields['book'].queryset = user_books
         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+
+
+from django.shortcuts import render, redirect
+from .forms import NewsForm
+from .models import News
+
+# View for news list
+def news_page(request):
+    news = News.objects.all().order_by('-id')
+    return render(request, 'myapp/news_page.html', {'news': news})
+
+# View for adding news
+def add_news(request):
+    if request.method == 'POST':
+        form = NewsForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('myapp:news_page')  # Redirect to the news list page after adding
+    else:
+        form = NewsForm()
+    return render(request, 'myapp/add_news.html', {'form': form})
+
+from django.shortcuts import get_object_or_404, redirect
+from .models import News
+
+def delete_news(request, news_id):
+    news_item = get_object_or_404(News, id=news_id)
+    if request.method == 'POST':
+        news_item.delete()
+        return redirect('myapp:news_page')  # После удаления возвращаемся к списку новостей
+    return render(request, 'myapp/confirm_delete.html', {'news_item': news_item})
+
+
+def edit_news(request, news_id):
+    news_item = get_object_or_404(News, id=news_id)
+    
+    if request.method == 'POST':
+        form = NewsForm(request.POST, request.FILES, instance=news_item)
+        if form.is_valid():
+            form.save()
+            return redirect('myapp:news_page')  # После редактирования возвращаемся к списку новостей
+    else:
+        form = NewsForm(instance=news_item)
+
+    return render(request, 'myapp/edit_news.html', {'form': form, 'news_item': news_item})

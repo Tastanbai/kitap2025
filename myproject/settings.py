@@ -30,6 +30,8 @@ ALLOWED_HOSTS = ['kitap-nomad.kz']
 
 
 
+
+
 # Application definition
 
 INSTALLED_APPS = [
