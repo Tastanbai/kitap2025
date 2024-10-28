@@ -108,26 +108,23 @@ def restore_book_balance(sender, instance, **kwargs):
     book.save()
 
 
-from PIL import Image  # Импортируем Pillow для работы с изображениями
+from PIL import Image
 
 class News(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь", null=True)  # Связь с пользователем
     title = models.CharField(max_length=255, verbose_name="Заголовок")
     tag = models.CharField(max_length=100, verbose_name="Тег")
-    text = models.TextField(verbose_name="Текст")
+    text = models.TextField(verbose_name="Текст",  null=True)
     photo = models.ImageField(upload_to='news_photos/', verbose_name="Фото")
-    publish_date = models.DateField(default=timezone.now, verbose_name="Дата публикации")  # Добавляем дату публикации
+    publish_date = models.DateField(default=timezone.now, verbose_name="Дата публикации")
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)  # Сначала сохраняем объект
-        
-        # Открываем изображение
+        super().save(*args, **kwargs)
         if self.photo:
             img = Image.open(self.photo.path)
-            
-            # Изменяем размер изображения до 800x600
             output_size = (800, 600)
             img = img.resize(output_size, Image.Resampling.LANCZOS)
-            img.save(self.photo.path)  # Сохраняем измененное изображение
+            img.save(self.photo.path)
 
     def __str__(self):
         return self.title

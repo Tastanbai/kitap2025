@@ -667,18 +667,21 @@ from django.shortcuts import render, redirect
 from .forms import NewsForm
 from .models import News
 
-# View for news list
+@login_required
 def news_page(request):
-    news = News.objects.all().order_by('-id')
+    # Фильтруем новости, чтобы показывать только те, которые принадлежат текущему пользователю
+    news = News.objects.filter(user=request.user).order_by('-id')
     return render(request, 'myapp/news_page.html', {'news': news})
 
-# View for adding news
+# View for adding news@login_required
 def add_news(request):
     if request.method == 'POST':
         form = NewsForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            return redirect('myapp:news_page')  # Redirect to the news list page after adding
+            news_instance = form.save(commit=False)
+            news_instance.user = request.user  # Присваиваем текущего пользователя как автора новости
+            news_instance.save()
+            return redirect('myapp:news_page')
     else:
         form = NewsForm()
     return render(request, 'myapp/add_news.html', {'form': form})
