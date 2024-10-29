@@ -13,6 +13,8 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
+from django.db import models
+
 
 
 def user_login(request):
@@ -56,6 +58,9 @@ def index(request):
     #books = Book.objects.all()
     books = Book.objects.filter(user=request.user)
 
+    total_quantity = books.aggregate(total_quantity=models.Sum('quantity'))['total_quantity'] or 0
+    total_balance = books.aggregate(total_balance=models.Sum('balance_quantity'))['total_balance'] or 0
+
     # Фильтруем книги по поисковому запросу, если он предоставлен
     if search_query:
         books = books.filter(
@@ -69,7 +74,10 @@ def index(request):
     if sort in ['name', 'quantity', 'balance_quantity', 'bbk' ]:
         books = books.order_by(sort)
 
-    return render(request, 'myapp/index.html', {'books': books, 'current_sort': sort})
+    return render(request, 'myapp/index.html', {'books': books, 
+                                                'current_sort': sort, 
+                                                'total_quantity': total_quantity,
+                                                'total_balance': total_balance})
 
 
 @login_required  # Убедитесь, что только аутентифицированные пользователи могут добавлять книги

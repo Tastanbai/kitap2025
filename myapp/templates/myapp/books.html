@@ -42,9 +42,36 @@
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="7" style="text-align: right;">ИТОГО:</th>
+                            <th id="total-quantity"></th>
+                            <th id="total-balance"></th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
             </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let totalQuantity = 0;
+        let totalBalance = 0;
+
+        // Calculate totals
+        document.querySelectorAll('#books-table tbody tr').forEach(row => {
+            const quantity = parseInt(row.cells[7].innerText) || 0;
+            const balance = parseInt(row.cells[8].innerText) || 0;
+
+            totalQuantity += quantity;
+            totalBalance += balance;
+        });
+
+        // Display totals
+        document.getElementById('total-quantity').textContent = totalQuantity;
+        document.getElementById('total-balance').textContent = totalBalance;
+    });
+</script>
 
 
