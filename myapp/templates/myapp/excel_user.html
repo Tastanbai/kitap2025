@@ -169,30 +169,28 @@ Excel файл
     }
     .video-container {
     text-align: center;
-    margin-top: 100px;
+    margin: 20px auto;
+    max-width: 90%; /* Ограничение ширины для адаптивности */
+    overflow: hidden; /* Скрывает лишнее, если элемент выходит за границы */
 }
 
-.video-text {
+.video-title {
     font-size: 24px;
     font-weight: bold;
+    margin-bottom: 15px;
     color: #333;
-    margin-bottom: 10px;
 }
 
-.video-link {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #007bff; /* Цвет фона */
-    color: white; /* Цвет текста */
-    text-decoration: none; /* Убираем подчеркивание */
-    border-radius: 5px; /* Закругленные углы */
-    font-size: 18px; /* Размер шрифта */
-    transition: background-color 0.3s;
+iframe {
+    width: 100%; /* Адаптируется к размеру контейнера */
+    height: auto; /* Автоматически регулирует высоту пропорционально ширине */
+    max-width: 1280px; /* Максимальная ширина видео */
+    aspect-ratio: 16 / 9; /* Соотношение сторон (16:9 для видео) */
+    border-radius: 8px; /* Закругленные углы */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Тень для красоты */
+    border: none; /* Убираем рамку вокруг iframe */
 }
 
-.video-link:hover {
-    background-color: #0056b3; /* Цвет фона при наведении */
-}
 
  </style>
     
@@ -249,17 +247,24 @@ Excel файл
         </form>
     </div> 
      
-    <div class="video">
-        <div class="video-container">
-            <h1 class="video-text">Видео инструкция</h1>
-            <a href="https://www.youtube.com/watch?v=S9l9F14GF4A" target="_blank" class="video-link">
-                Посмотреть видео на YouTube
-            </a>
-        </div>
+    <div class="video-container">
+        <h1 class="video-title">Инструкция по использованию сайта kitap-nomad.kz</h1>
+        <iframe 
+            width="1280" 
+            height="693" 
+            src="https://www.youtube.com/embed/S9l9F14GF4A" 
+            title="Инструкция по использованию сайта kitap-nomad.kz" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            referrerpolicy="strict-origin-when-cross-origin" 
+            allowfullscreen>
+        </iframe>
     </div>
+    
     
 </div>    
 </div>
 {% endblock content %}
 </body>
 </html> 
+
