@@ -167,6 +167,33 @@ Excel файл
     .content-container input[type="file"] {
         flex-grow: 1; /* Позволяет input расширяться и занимать доступное пространство */
     }
+    .video-container {
+    text-align: center;
+    margin-top: 100px;
+}
+
+.video-text {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.video-link {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff; /* Цвет фона */
+    color: white; /* Цвет текста */
+    text-decoration: none; /* Убираем подчеркивание */
+    border-radius: 5px; /* Закругленные углы */
+    font-size: 18px; /* Размер шрифта */
+    transition: background-color 0.3s;
+}
+
+.video-link:hover {
+    background-color: #0056b3; /* Цвет фона при наведении */
+}
+
  </style>
     
 {% endblock css_file %}
@@ -222,6 +249,15 @@ Excel файл
         </form>
     </div> 
      
+    <div class="video">
+        <div class="video-container">
+            <h1 class="video-text">Видео инструкция</h1>
+            <a href="https://www.youtube.com/watch?v=S9l9F14GF4A" target="_blank" class="video-link">
+                Посмотреть видео на YouTube
+            </a>
+        </div>
+    </div>
+    
 </div>    
 </div>
 {% endblock content %}
