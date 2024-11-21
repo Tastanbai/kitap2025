@@ -14,7 +14,7 @@ class ReturnedBook(models.Model):
     date_in = models.DateField(null=True, blank=True, verbose_name='Дата возврата')
     return_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата возврата книги')
     city = models.CharField(max_length=32, verbose_name='Адрес', null=True)
-    email = models.EmailField(verbose_name='Электронная почта', null=True)
+    email = models.EmailField(verbose_name='Электронная почта', null=True, blank=True)
     phone = models.CharField(max_length=15,null=True, verbose_name='Номер телефона')
     book_name = models.CharField(max_length=255,null=True, verbose_name='Название книги')
     quantity = models.PositiveIntegerField(null=True, verbose_name='Количество')

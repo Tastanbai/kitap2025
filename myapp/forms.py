@@ -17,6 +17,8 @@ class LoginForm(forms.Form):
         )
     )
 
+   
+
     pwd = forms.CharField(
         min_length=6,
         label='Пароль',
@@ -93,13 +95,28 @@ from django.contrib.auth.models import User
 
 class RegForm(forms.Form):
     name = forms.CharField(
-        min_length=6,
+        min_length=5,
         label='Имя пользователя',
         error_messages={
             'required': 'Имя пользователя не может быть пустым',
             'min_length': 'Не менее 6 символов',
         },
         widget=widgets.TextInput(
+            attrs={
+                'class': 'form-control',
+            }
+        )
+    )
+
+    lastname = forms.CharField(
+        min_length=2,
+        label='Фамилия пользователя',
+        required=True,
+        error_messages={
+            'required': 'Фамилия пользователя не может быть пустой',
+            'min_length': 'Не менее 2 символов',
+        },
+        widget=forms.TextInput(
             attrs={
                 'class': 'form-control',
             }
@@ -212,10 +229,6 @@ class PublishForm(forms.ModelForm):
             },
             'city': {
                 'max_length': ("Не может превышать 32 символа"),
-                "required": "Это поле обязательно для заполнения",
-            },
-            'email': {
-                'invalid': 'Неправильный формат адреса электронной почты',
                 "required": "Это поле обязательно для заполнения",
             },
             'phone': {

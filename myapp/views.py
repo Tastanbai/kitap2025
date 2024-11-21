@@ -145,19 +145,61 @@ def delete_books(request):
 
 
 
+# def reg(request):
+#     if request.method == 'POST':
+#         form = RegForm(request.POST)
+#         if form.is_valid():
+#             name = request.POST.get('name')
+#             pwd = request.POST.get('pwd')
+#             r_pwd = request.POST.get('r_pwd')
+#             email = request.POST.get('email')
+
+#             # Добавляем проверку на совпадение введенных паролей
+#             if pwd == r_pwd:
+#                 user = User.objects.create_user(
+#                     username=name,
+#                     password=pwd,
+#                     email=email,
+#                 )
+#                 # Автоматический вход после регистрации
+#                 user.backend = 'django.contrib.auth.backends.ModelBackend'
+#                 auth_login(request, user)
+#                 return redirect('myapp:index')  # Перенаправление на главную страницу после регистрации
+#             else:
+#                 # Если пароли не совпадают, добавляем ошибку к форме
+#                 form.add_error('r_pwd', 'Пароли не совпадают.')
+
+#         errors = form.errors.get('__all__')
+
+#         context = {
+#             'form': form,
+#             'errors': errors
+#         }
+
+#         return render(request, 'myapp/reg.html', context=context)
+
+#     form = RegForm()
+#     context = {
+#         'form': form
+#     }
+
+#     return render(request, 'myapp/reg.html', context=context)
+
 def reg(request):
     if request.method == 'POST':
         form = RegForm(request.POST)
         if form.is_valid():
             name = request.POST.get('name')
+            lastname = request.POST.get('lastname')
             pwd = request.POST.get('pwd')
             r_pwd = request.POST.get('r_pwd')
             email = request.POST.get('email')
 
-            # Добавляем проверку на совпадение введенных паролей
+            # Проверяем совпадение паролей
             if pwd == r_pwd:
                 user = User.objects.create_user(
                     username=name,
+                    first_name=lastname,  # Сохраняем фамилию в поле first_name
                     password=pwd,
                     email=email,
                 )
@@ -166,25 +208,14 @@ def reg(request):
                 auth_login(request, user)
                 return redirect('myapp:index')  # Перенаправление на главную страницу после регистрации
             else:
-                # Если пароли не совпадают, добавляем ошибку к форме
                 form.add_error('r_pwd', 'Пароли не совпадают.')
 
-        errors = form.errors.get('__all__')
-
-        context = {
-            'form': form,
-            'errors': errors
-        }
-
+        context = {'form': form, 'errors': form.errors.get('__all__')}
         return render(request, 'myapp/reg.html', context=context)
 
     form = RegForm()
-    context = {
-        'form': form
-    }
-
+    context = {'form': form}
     return render(request, 'myapp/reg.html', context=context)
-
 
 # def add_publish(request):
 #     user_books = Book.objects.filter(user=request.user)
@@ -606,10 +637,172 @@ def excel_user(request):
 
 #---------------------------------------------------------------------------------------------------------------------------------------------
 
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+#     fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
+
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
+
+#         if form.is_valid():
+#             books_data = request.POST.getlist('book')
+#             quantities = request.POST.getlist('quantity')
+#             name = form.cleaned_data['name']
+#             errors = False
+
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+                
+#                 if book_instance.balance_quantity < int(quantity):
+#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+#                     errors = True
+
+#             if errors:
+#                 return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+
+#             publish_instances = []
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+
+#                 publish_instance = Publish(
+#                     user=request.user,
+#                     name=name,  # Используйте новое или выбранное ФИО
+#                     iin=form.cleaned_data['iin'],
+#                     date_out=form.cleaned_data['date_out'],
+#                     date_in=form.cleaned_data['date_in'],
+#                     city=form.cleaned_data['city'],
+#                     email=form.cleaned_data['email'],
+#                     phone=form.cleaned_data['phone'],
+#                     book=book_instance,
+#                     quantity=quantity
+#                 )
+#                 publish_instances.append(publish_instance)
+#                 book_instance.balance_quantity -= int(quantity)
+#                 book_instance.save()
+
+#             Publish.objects.bulk_create(publish_instances)
+
+#             recipient_email = form.cleaned_data['email']
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"Уважаемый {name}, вы успешно арендовали книги.",
+#                 'kitaphana@oqz.kz',
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
+
+#             return redirect(reverse('myapp:rent_book'))
+
+#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+#     else:
+#         form = PublishForm()
+#         form.fields['book'].queryset = user_books
+#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+
+# from django.db import connection
+
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+#     fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
+
+#     # Получение последнего ИИН из базы данных
+#     last_iin = None
+#     with connection.cursor() as cursor:
+#         cursor.execute("SELECT card FROM School WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;")
+#         row = cursor.fetchone()
+#         if row:
+#             last_iin = row[0]
+
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
+
+#         if form.is_valid():
+#             books_data = request.POST.getlist('book')
+#             quantities = request.POST.getlist('quantity')
+#             name = form.cleaned_data['name']
+#             errors = False
+
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+                
+#                 if book_instance.balance_quantity < int(quantity):
+#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+#                     errors = True
+
+#             if errors:
+#                 return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+
+#             publish_instances = []
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+
+#                 publish_instance = Publish(
+#                     user=request.user,
+#                     name=name,  # Используйте новое или выбранное ФИО
+#                     iin=form.cleaned_data['iin'],
+#                     date_out=form.cleaned_data['date_out'],
+#                     date_in=form.cleaned_data['date_in'],
+#                     city=form.cleaned_data['city'],
+#                     email=form.cleaned_data['email'],
+#                     phone=form.cleaned_data['phone'],
+#                     book=book_instance,
+#                     quantity=quantity
+#                 )
+#                 publish_instances.append(publish_instance)
+#                 book_instance.balance_quantity -= int(quantity)
+#                 book_instance.save()
+
+#             Publish.objects.bulk_create(publish_instances)
+
+#             recipient_email = form.cleaned_data['email']
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"Уважаемый {name}, вы успешно арендовали книги.",
+#                 'kitaphana@oqz.kz',
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
+
+#             return redirect(reverse('myapp:rent_book'))
+
+#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+#     else:
+#         form = PublishForm(initial={'iin': last_iin})  # Предустановить ИИН
+#         form.fields['book'].queryset = user_books
+#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+from django.db import connection
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+from django.core.mail import send_mail
+from .forms import PublishForm
+from .models import Book, Publish
+
 @login_required
 def add_publish(request):
     user_books = Book.objects.filter(user=request.user)
-    fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
+
+    # Определяем текущую школу
+    current_school = request.user.first_name
+    school_table = f"{current_school}"
+
+    # Получение последнего card и a1 из таблицы школы
+    last_card = None
+    last_a1 = None
+    try:
+        with connection.cursor() as cursor:
+            query = f"SELECT card, a1 FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
+            cursor.execute(query)
+            row = cursor.fetchone()
+            if row:
+                last_card = row[0]  # card
+                last_a1 = row[1]   # a1
+    except Exception as e:
+        print(f"Ошибка доступа к таблице {school_table}: {e}")
 
     if request.method == 'POST':
         form = PublishForm(request.POST)
@@ -623,13 +816,12 @@ def add_publish(request):
 
             for book_id, quantity in zip(books_data, quantities):
                 book_instance = get_object_or_404(Book, pk=book_id)
-                
                 if book_instance.balance_quantity < int(quantity):
                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
                     errors = True
 
             if errors:
-                return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+                return render(request, 'myapp/add_publish.html', {'form': form})
 
             publish_instances = []
             for book_id, quantity in zip(books_data, quantities):
@@ -637,7 +829,7 @@ def add_publish(request):
 
                 publish_instance = Publish(
                     user=request.user,
-                    name=name,  # Используйте новое или выбранное ФИО
+                    name=name,
                     iin=form.cleaned_data['iin'],
                     date_out=form.cleaned_data['date_out'],
                     date_in=form.cleaned_data['date_in'],
@@ -664,11 +856,12 @@ def add_publish(request):
 
             return redirect(reverse('myapp:rent_book'))
 
-        return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+        return render(request, 'myapp/add_publish.html', {'form': form})
     else:
-        form = PublishForm()
+        # Устанавливаем last_card в поле ИИН и last_a1 в поле ФИО
+        form = PublishForm(initial={'iin': last_card, 'name': last_a1 })
         form.fields['book'].queryset = user_books
-        return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
+        return render(request, 'myapp/add_publish.html', {'form': form})
 
 
 from django.shortcuts import render, redirect

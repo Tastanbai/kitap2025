@@ -11,7 +11,6 @@ urlpatterns = [
     path('news/<int:news_id>/edit/', views.edit_news, name='edit_news'),
     path('news/<int:news_id>/delete/', views.delete_news, name='delete_news'),
     path('excel/', views.excel, name='excel'),
-    path('excel_user/', views.excel_user, name='excel_user'),
     path('send-email/', views.send_email, name='send_email'),
     path('rent_book/', views.rent_book, name='rent_book'),
     path('blacklist/', views.blacklist, name='blacklist'),
