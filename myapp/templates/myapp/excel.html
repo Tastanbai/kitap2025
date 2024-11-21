@@ -167,6 +167,30 @@ Excel файл
     .content-container input[type="file"] {
         flex-grow: 1; /* Позволяет input расширяться и занимать доступное пространство */
     }
+
+    .video-container {
+    text-align: center;
+    margin: 20px auto;
+    max-width: 90%; /* Ограничение ширины для адаптивности */
+    overflow: hidden; /* Скрывает лишнее, если элемент выходит за границы */
+}
+
+.video-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+iframe {
+    width: 100%; /* Адаптируется к размеру контейнера */
+    height: auto; /* Автоматически регулирует высоту пропорционально ширине */
+    max-width: 1280px; /* Максимальная ширина видео */
+    aspect-ratio: 16 / 9; /* Соотношение сторон (16:9 для видео) */
+    border-radius: 8px; /* Закругленные углы */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Тень для красоты */
+    border: none; /* Убираем рамку вокруг iframe */
+}
  </style>
     
 {% endblock css_file %}
@@ -220,6 +244,20 @@ Excel файл
             <button type="submit">Загрузить файл</button>
         </form>
     </div> 
+
+    <div class="video-container">
+        <h1 class="video-title">Инструкция по использованию сайта kitap-nomad.kz</h1>
+        <iframe 
+            width="1280" 
+            height="693" 
+            src="https://www.youtube.com/embed/S9l9F14GF4A" 
+            title="Инструкция по использованию сайта kitap-nomad.kz" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            referrerpolicy="strict-origin-when-cross-origin" 
+            allowfullscreen>
+        </iframe>
+    </div>
      
 </div>    
 </div>
