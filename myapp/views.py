@@ -1068,26 +1068,14 @@ def add_publish(request):
             recipient_email = form.cleaned_data['email']
             send_mail(
                 'Подтверждение аренды книги',
-                f"Уважаемый {name}, вы успешно арендовали книги ",
-                'kitaphana@oqz.kz',
-                [recipient_email],
-                fail_silently=False,
-            )
-
-            send_mail(
-                'Подтверждение аренды книги',
-                f"""Уважаемый {name}, 
+                f"""Уважаемый {name},
 
             Вы успешно арендовали следующие книги:
 
-            {''.join([
-                f"- Книга: {book_instance.name}\n"
-                f"  Количество: {quantity}\n"
-                f"  Дата получения: {form.cleaned_data['date_out'] or last_data}\n"
-                f"  Дата возврата: {form.cleaned_data['date_in']}\n\n"
-                for book_id, quantity in zip(books_data, quantities)
-                for book_instance in [get_object_or_404(Book, pk=book_id)]
-            ])}
+            - Книга: {book_instance.name}
+            Количество: {quantity}
+            Дата получения: {form.cleaned_data['date_out'] or last_data}
+            Дата возврата: {form.cleaned_data['date_in']}
 
             Спасибо, что пользуетесь нашей библиотекой!
             """,
