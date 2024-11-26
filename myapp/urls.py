@@ -23,4 +23,5 @@ urlpatterns = [
     path('edit/<int:id>/book/', views.edit_book, name='edit_book'),
     path('delete_books/', views.delete_books, name='delete_books'),
     path('select_all_books/', views.select_all_books, name='select_all_books'),
+    path('check-isbn/', views.check_isbn, name='check_isbn'),
 ]

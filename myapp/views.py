@@ -1,3 +1,4 @@
+from datetime import date
 import json
 from django.conf import settings
 from django.http import HttpResponseRedirect
@@ -774,95 +775,154 @@ def excel_user(request):
 #         form = PublishForm(initial={'iin': last_iin})  # Предустановить ИИН
 #         form.fields['book'].queryset = user_books
 #         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-from django.db import connection
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-from django.core.mail import send_mail
-from .forms import PublishForm
-from .models import Book, Publish
+# f
 
-@login_required
-def add_publish(request):
-    user_books = Book.objects.filter(user=request.user)
+# from django.db import connection
+# from django.shortcuts import render, redirect, get_object_or_404
+# from django.contrib.auth.decorators import login_required
+# from django.urls import reverse
+# from django.core.mail import send_mail
+# from django.contrib import messages
+# from .forms import PublishForm
+# from .models import Book, Publish
 
-    # Определяем текущую школу
-    current_school = request.user.first_name
-    school_table = f"{current_school}"
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+    
+#     # Определяем текущую школу
+#     current_school = request.user.first_name
+#     school_table = f"{current_school}"
 
-    # Получение последнего card и a1 из таблицы школы
-    last_card = None
-    last_a1 = None
-    try:
-        with connection.cursor() as cursor:
-            query = f"SELECT card, a1 FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
-            cursor.execute(query)
-            row = cursor.fetchone()
-            if row:
-                last_card = row[0]  # card
-                last_a1 = row[1]   # a1
-    except Exception as e:
-        print(f"Ошибка доступа к таблице {school_table}: {e}")
+#     # Получение последнего card и a1 из таблицы школы
+#     last_card = None
+#     last_a1 = None
+#     try:
+#         with connection.cursor() as cursor:
+#             query = f"SELECT card, a1 FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
+#             cursor.execute(query)
+#             row = cursor.fetchone()
+#             if row:
+#                 last_card = row[0]  # card
+#                 last_a1 = row[1]    # a1
+#     except Exception as e:
+#         print(f"Ошибка доступа к таблице {school_table}: {e}")
 
-    if request.method == 'POST':
-        form = PublishForm(request.POST)
-        form.fields['book'].queryset = user_books
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
 
-        if form.is_valid():
-            books_data = request.POST.getlist('book')
-            quantities = request.POST.getlist('quantity')
-            name = form.cleaned_data['name']
-            errors = False
+#         # Проверка ISBN
+#         isbn = request.POST.get('ISBN')
+#         if isbn:
+#             existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
+#             if existing_book:
+#                 messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
+#                 # Предзаполняем форму найденной книгой
+#                 form = PublishForm(request.POST, initial={'book': [existing_book.id]})
+#                 form.fields['book'].queryset = user_books
+#             else:
+#                 messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
+#                 return render(request, 'myapp/add_publish.html', {'form': form})
 
-            for book_id, quantity in zip(books_data, quantities):
-                book_instance = get_object_or_404(Book, pk=book_id)
-                if book_instance.balance_quantity < int(quantity):
-                    form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-                    errors = True
+#         if form.is_valid():
+#             books_data = request.POST.getlist('book')
+#             quantities = request.POST.getlist('quantity')
+#             name = form.cleaned_data['name']
+#             errors = False
 
-            if errors:
-                return render(request, 'myapp/add_publish.html', {'form': form})
+#             # Проверка доступного количества книг
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+#                 if book_instance.balance_quantity < int(quantity):
+#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+#                     errors = True
 
-            publish_instances = []
-            for book_id, quantity in zip(books_data, quantities):
-                book_instance = get_object_or_404(Book, pk=book_id)
+#             if errors:
+#                 return render(request, 'myapp/add_publish.html', {'form': form})
 
-                publish_instance = Publish(
-                    user=request.user,
-                    name=name,
-                    iin=form.cleaned_data['iin'],
-                    date_out=form.cleaned_data['date_out'],
-                    date_in=form.cleaned_data['date_in'],
-                    city=form.cleaned_data['city'],
-                    email=form.cleaned_data['email'],
-                    phone=form.cleaned_data['phone'],
-                    book=book_instance,
-                    quantity=quantity
-                )
-                publish_instances.append(publish_instance)
-                book_instance.balance_quantity -= int(quantity)
-                book_instance.save()
+#             # Создание записей публикации
+#             publish_instances = []
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
 
-            Publish.objects.bulk_create(publish_instances)
+#                 publish_instance = Publish(
+#                     user=request.user,
+#                     name=name,
+#                     iin=form.cleaned_data['iin'],
+#                     date_out=form.cleaned_data['date_out'],
+#                     date_in=form.cleaned_data['date_in'],
+#                     city=form.cleaned_data['city'],
+#                     email=form.cleaned_data['email'],
+#                     phone=form.cleaned_data['phone'],
+#                     book=book_instance,
+#                     quantity=quantity
+#                 )
+#                 publish_instances.append(publish_instance)
+#                 book_instance.balance_quantity -= int(quantity)
+#                 book_instance.save()
 
-            recipient_email = form.cleaned_data['email']
-            send_mail(
-                'Подтверждение аренды книги',
-                f"Уважаемый {name}, вы успешно арендовали книги.",
-                'kitaphana@oqz.kz',
-                [recipient_email],
-                fail_silently=False,
-            )
+#             Publish.objects.bulk_create(publish_instances)
 
-            return redirect(reverse('myapp:rent_book'))
+#             # Отправка email
+#             recipient_email = form.cleaned_data['email']
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"Уважаемый {name}, вы успешно арендовали книги ",
+#                 'kitaphana@oqz.kz',
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
 
-        return render(request, 'myapp/add_publish.html', {'form': form})
-    else:
-        # Устанавливаем last_card в поле ИИН и last_a1 в поле ФИО
-        form = PublishForm(initial={'iin': last_card, 'name': last_a1 })
-        form.fields['book'].queryset = user_books
-        return render(request, 'myapp/add_publish.html', {'form': form})
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"""Уважаемый {name}, 
 
+#             Вы успешно арендовали следующие книги:
+
+#             {''.join([
+#                 f"- Книга: {book_instance.name}\n"
+#                 f"  Количество: {quantity}\n"
+#                 f"  Дата получения: {form.cleaned_data['date_out']}\n"
+#                 f"  Дата возврата: {form.cleaned_data['date_in']}\n\n"
+#                 for book_id, quantity in zip(books_data, quantities)
+#                 for book_instance in [get_object_or_404(Book, pk=book_id)]
+#             ])}
+
+#             Спасибо, что пользуетесь нашей библиотекой!
+#             """,
+#                 'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
+
+#             return redirect(reverse('myapp:rent_book'))
+#     else:
+#         # GET запрос - создаем новую форму с начальными данными
+#         form = PublishForm(initial={'iin': last_card, 'name': last_a1})
+#         form.fields['book'].queryset = user_books
+
+#     return render(request, 'myapp/add_publish.html', {'form': form})
+
+
+from django.http import JsonResponse
+
+def check_isbn(request):
+    isbn = request.GET.get('isbn')
+    if isbn:
+        try:
+            book = Book.objects.get(user=request.user, ISBN=isbn)
+            return JsonResponse({
+                'found': True,
+                'book_name': book.name,
+                'book_id': book.id
+            })
+        except Book.DoesNotExist:
+            pass
+    
+    return JsonResponse({
+        'found': False
+    })
 
 from django.shortcuts import render, redirect
 from .forms import NewsForm
@@ -910,3 +970,141 @@ def edit_news(request, news_id):
         form = NewsForm(instance=news_item)
 
     return render(request, 'myapp/edit_news.html', {'form': form, 'news_item': news_item})
+
+from django.db import connection
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+from django.core.mail import send_mail
+from django.contrib import messages
+from .forms import PublishForm
+from .models import Book, Publish
+
+@login_required
+def add_publish(request):
+    user_books = Book.objects.filter(user=request.user)
+    
+    # Определяем текущую школу
+    current_school = request.user.first_name
+    school_table = f"{current_school}"
+
+    # Получение последнего card, a1 и data из таблицы школы
+    last_card = None
+    last_a1 = None
+    last_data = None
+    try:
+        with connection.cursor() as cursor:
+            query = f"SELECT card, a1, data FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
+            cursor.execute(query)
+            row = cursor.fetchone()
+            if row:
+                last_card = row[0]  # card
+                last_a1 = row[1]    # a1
+                last_data = row[2]  # data
+                if last_data:
+                    last_data = last_data.split('T')[0]  # Взять часть до 'T'
+                    last_data = '-'.join(reversed(last_data.split('.')))  # Преобразовать в формат дд.мм.гггг
+                    print(f"Значение last_data: {last_data}")  
+    except Exception as e: 
+        print(f"Ошибка доступа к таблице {school_table}: {e}")
+
+    if request.method == 'POST':
+        form = PublishForm(request.POST)
+        form.fields['book'].queryset = user_books
+
+        # Проверка ISBN
+        isbn = request.POST.get('ISBN')
+        if isbn:
+            existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
+            if existing_book:
+                messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
+                # Предзаполняем форму найденной книгой
+                form = PublishForm(request.POST, initial={'book': [existing_book.id]})
+                form.fields['book'].queryset = user_books
+            else:
+                messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
+                return render(request, 'myapp/add_publish.html', {'form': form})
+
+        if form.is_valid():
+            books_data = request.POST.getlist('book')
+            quantities = request.POST.getlist('quantity')
+            name = form.cleaned_data['name']
+            errors = False
+
+            # Проверка доступного количества книг
+            for book_id, quantity in zip(books_data, quantities):
+                book_instance = get_object_or_404(Book, pk=book_id)
+                if book_instance.balance_quantity < int(quantity):
+                    form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+                    errors = True
+
+            if errors:
+                return render(request, 'myapp/add_publish.html', {'form': form})
+
+            # Создание записей публикации
+            publish_instances = []
+            for book_id, quantity in zip(books_data, quantities):
+                book_instance = get_object_or_404(Book, pk=book_id)
+
+                publish_instance = Publish(
+                    user=request.user,
+                    name=name,
+                    iin=form.cleaned_data['iin'],
+                    date_out=form.cleaned_data['date_out'] or last_data,
+                    date_in=form.cleaned_data['date_in'],
+                    city=form.cleaned_data['city'],
+                    email=form.cleaned_data['email'],
+                    phone=form.cleaned_data['phone'],
+                    book=book_instance,
+                    quantity=quantity
+                )
+                publish_instances.append(publish_instance)
+                book_instance.balance_quantity -= int(quantity)
+                book_instance.save()
+
+            Publish.objects.bulk_create(publish_instances)
+
+            # Отправка email
+            recipient_email = form.cleaned_data['email']
+            send_mail(
+                'Подтверждение аренды книги',
+                f"Уважаемый {name}, вы успешно арендовали книги ",
+                'kitaphana@oqz.kz',
+                [recipient_email],
+                fail_silently=False,
+            )
+
+            send_mail(
+                'Подтверждение аренды книги',
+                f"""Уважаемый {name}, 
+
+            Вы успешно арендовали следующие книги:
+
+            {''.join([
+                f"- Книга: {book_instance.name}\n"
+                f"  Количество: {quantity}\n"
+                f"  Дата получения: {form.cleaned_data['date_out'] or last_data}\n"
+                f"  Дата возврата: {form.cleaned_data['date_in']}\n\n"
+                for book_id, quantity in zip(books_data, quantities)
+                for book_instance in [get_object_or_404(Book, pk=book_id)]
+            ])}
+
+            Спасибо, что пользуетесь нашей библиотекой!
+            """,
+                'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
+                [recipient_email],
+                fail_silently=False,
+            )
+
+            return redirect(reverse('myapp:rent_book'))
+    else:
+        # GET запрос - создаем новую форму с начальными данными
+        form = PublishForm(initial={'iin': last_card, 
+                                    'name': last_a1, 
+                                    'date_out': last_data or date.today().strftime('%Y-%m-%d')
+                                    })
+        form.fields['book'].queryset = user_books
+
+        print(f"Инициализация формы: {form.initial}")
+
+    return render(request, 'myapp/add_publish.html', {'form': form})

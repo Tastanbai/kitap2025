@@ -17,8 +17,6 @@ class LoginForm(forms.Form):
         )
     )
 
-   
-
     pwd = forms.CharField(
         min_length=6,
         label='Пароль',
@@ -187,24 +185,49 @@ class RegForm(forms.Form):
             else:
                 raise forms.ValidationError('Пароли не совпадают')
 
+from django import forms
+from django.forms import TextInput, NumberInput, DateInput
+from datetime import date
+from .models import Publish, Book
 
 class PublishForm(forms.ModelForm):
+    ISBN = forms.CharField(
+        max_length=255,
+        label="ISBN",
+        required=False,
+        widget=TextInput(attrs={"class": "form-control", "placeholder": "Введите ISBN для поиска книги"}),
+        help_text="Введите ISBN книги для автоматического выбора."
+    )
+
+    date_out = forms.DateField(
+        required=False,
+        initial=date.today,
+        widget=DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label='Дата выдачи'
+    )
+
+    def clean_date_out(self):
+        date_out = self.cleaned_data.get('date_out')
+        if not date_out:
+            return date.today()
+        return date_out
+
     class Meta:
         model = Publish
         fields = (
-            'name', 'iin', 'city', 'email', 'phone', 'book', 'quantity', 'date_out', 'date_in'
+            'name', 'iin', 'city', 'email', 'phone', 
+            'book', 'quantity', 'date_out', 'date_in'
         )
-
         labels = {
             'name': 'ФИО',
             'iin': 'ИИН',
             'city': 'Адрес',
             'email': 'Электронная почта',
-            'phone': 'Номер',
+            'phone': 'Номер телефона',
             'book': 'Книга',
             'quantity': 'Количество',
-            'date_out': 'Дата выдачи',  
-            'date_in': 'Время возврата'
+            'date_out': 'Дата выдачи',
+            'date_in': 'Дата возврата',
         }
         widgets = {
             'name': TextInput(attrs={'class': 'form-control'}),
@@ -212,12 +235,11 @@ class PublishForm(forms.ModelForm):
             'city': TextInput(attrs={'class': 'form-control'}),
             'email': TextInput(attrs={'class': 'form-control'}),
             'phone': TextInput(attrs={'class': 'form-control'}),
-            'book': Select(attrs={'class': 'form-control'}),
+            'book': forms.Select(attrs={'class': 'form-control'}),
             'quantity': NumberInput(attrs={'class': 'form-control'}),
-            'date_out': DateInput(attrs={'class': 'form-control', 'type': 'date'}),  
-            'date_in': DateInput(attrs={'class': 'form-control', 'type': 'date'})
-        }
-
+            'date_out': DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'date_in': DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        } 
         error_messages = {
             'name': {
                 'max_length': "Не может превышать 32 символа",

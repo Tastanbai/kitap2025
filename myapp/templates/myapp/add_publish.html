@@ -1,117 +1,194 @@
-{% extends 'base.html' %}
-{% block css_file  %} 
 
+{% extends 'base.html' %}
+{% block css_file %}
 <style>
     #rent-form {
-        max-width: 500px; /* Максимальная ширина формы */
-        margin: 0 auto; /* Центрирование формы на странице */
-        padding: 20px; /* Внутренний отступ формы */
-        border: 1px solid #ccc; /* Граница формы */
-        border-radius: 5px; /* Скругление углов формы */
-        background-color: #f9f9f9; /* Цвет фона формы */
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
     }
 
     .form-group {
-        margin-bottom: 20px; /* Отступ между элементами формы */
+        margin-bottom: 20px;
     }
 
     .error_info {
-        color: red; /* Цвет сообщений об ошибках */
+        color: red;
     }
 
     .btn-primary {
-        background-color: #007bff; /* Цвет фона кнопки */
-        color: #fff; /* Цвет текста кнопки */
-        border-color: #007bff; /* Цвет границы кнопки */
+        background-color: #007bff;
+        color: #fff;
+        border-color: #007bff;
     }
 
     .btn-primary:hover {
-        background-color: #0056b3; /* Цвет фона кнопки при наведении */
-        border-color: #0056b3; /* Цвет границы кнопки при наведении */
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+    .book-info-field {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: #fff;
+        width: 100%;
+        min-height: 38px;
+        margin-top: 5px;
+        color: #495057;
+    }
+
+    .book-not-found {
+        color: #dc3545;
+        font-style: italic;
+    }
+
+    .book-found {
+        color: #28a745;
+        font-weight: 500;
+    }
+
+    .isbn-group {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .isbn-group .isbn-input {
+        flex-grow: 1;
+    }
+
+    #id_ISBN {
+        width: 100%;
     }
 </style>
-{% endblock  %}
+{% endblock %}
  
 {% block title %}
     Прокат книг
-{% endblock title %}
+{% endblock %}
 
 {% block header-info %}
     <h3>Прокат книг</h3>
     <a href="{% url 'myapp:rent_book' %}" class="btn btn-default">На главную</a>
-{% endblock header-info %}
+{% endblock %}
 
 {% block content %}
-    <form id="rent-form" action="{% url 'myapp:add_publish' %}" method="post" novalidate>
-        {% csrf_token %}
+<form method="POST" id="rent-form">
+    {% csrf_token %}
 
-        <div class="form-group">
-            <label for="id_name">{{ form.name.label }}</label>
-            {{ form.name }}
-            <span class="error_info">{{ form.name.errors.0 }}</span>
-        </div>
-        
-        <div class="form-group">
-            <label for="id_iin">{{ form.iin.label }}</label>
-            {{ form.iin }}
-            <span class="error_info">{{ form.iin.errors.0 }}</span>
-        </div>
+    <div class="form-group">
+        {{ form.name.label }}
+        {{ form.name }}
+        <span class="error_info">{{ form.name.errors.0 }}</span>
+    </div>
 
-        <div class="form-group">
-            <label for="id_date_out">{{ form.date_out.label }}</label>
-            {{ form.date_out }}
-            <span class="error_info">{{ form.date_out.errors.0 }}</span>
-        </div>
-        
-        <div class="form-group">
-            <label for="id_date_in">{{ form.date_in.label }}</label>
-            {{ form.date_in }}
-            <span class="error_info">{{ form.date_in.errors.0 }}</span>
-        </div>
-        
-        <div class="form-group">
-            <label for="id_city">{{ form.city.label }}</label>
-            {{ form.city }}
-            <span class="error_info">{{ form.city.errors.0 }}</span>
-        </div>
+    <div class="form-group">
+        {{ form.iin.label }}
+        {{ form.iin }}
+        <span class="error_info">{{ form.iin.errors.0 }}</span>
+    </div>
 
-        <div class="form-group">
-            <label for="id_email">{{ form.email.label }}</label>
-            {{ form.email }}
-            <span class="error_info">{{ form.email.errors.0 }}</span>
+    <div class="form-group">
+        {{ form.date_out.label }}
+        {{ form.date_out }}
+        <span class="error_info">{{ form.date_out.errors.0 }}</span>
+    </div>
+
+    <div class="form-group">
+        {{ form.date_in.label }}
+        {{ form.date_in }}
+        <span class="error_info">{{ form.date_in.errors.0 }}</span>
+    </div>
+
+    <div class="form-group">
+        {{ form.city.label }}
+        {{ form.city }}
+        <span class="error_info">{{ form.city.errors.0 }}</span>
+    </div>
+
+    <div class="form-group">
+        {{ form.email.label }}
+        {{ form.email }}
+        <span class="error_info">{{ form.email.errors.0 }}</span>
+    </div>
+
+    <div class="form-group">
+        {{ form.phone.label }}
+        {{ form.phone }}
+        <span class="error_info">{{ form.phone.errors.0 }}</span>
+    </div>
+
+    <div class="form-group">
+        <label for="id_ISBN">ISBN</label>
+        <div class="isbn-group">
+            <div class="isbn-input">
+                {{ form.ISBN }}
+                <span class="error_info">{{ form.ISBN.errors.0 }}</span>
+            </div>
+            <button type="button" id="checkIsbn" class="btn btn-primary">Проверить ISBN</button>
         </div>
+    </div>
 
-        <div class="form-group">
-            <label for="id_phone">{{ form.phone.label }}</label>
-            {{ form.phone }}
-            <span class="error_info">{{ form.phone.errors.0 }}</span>
-        </div>
-
-        <div id="books-container">
-            <div class="book-group">
-                <div class="form-group">
-                    <label for="id_book">{{ form.book.label }}</label>
-                    {{ form.book }}
-                    <span class="error_info">{{ form.book.errors.0 }}</span>
-                </div>
-
-                <div class="form-group">
-                    <label for="id_quantity">{{ form.quantity.label }}</label>
-                    {{ form.quantity }}
-                    <span class="error_info">{{ form.quantity.errors.0 }}</span>
+    <div id="books-container">
+        <div class="book-group">
+            <div class="form-group">
+                <label>Книга</label>
+                <div id="book-info" class="book-info-field">
+                    {% if found_book %}
+                        <p class="book-found">{{ found_book.name }}</p>
+                        <input type="hidden" name="book" value="{{ found_book.id }}">
+                    {% else %}
+                        <p class="text-muted">Введите ISBN и нажмите "Проверить ISBN"</p>
+                    {% endif %}
                 </div>
             </div>
+
+            <div class="form-group">
+                {{ form.quantity.label }}
+                {{ form.quantity }}
+                <span class="error_info">{{ form.quantity.errors.0 }}</span>
+            </div>
         </div>
+    </div>
 
-        <button type="button" id="add-book" class="btn btn-secondary">Добавить книгу</button>
-        <input type="submit" value="Отправить" class="btn btn-primary">
-    </form>
+    <button type="submit" class="btn btn-success w-100">Отправить</button>
+</form>
 
-    <script>
-        document.getElementById('add-book').addEventListener('click', function() {
-            var booksContainer = document.getElementById('books-container');
-            var bookGroup = document.querySelector('.book-group').cloneNode(true);
-            booksContainer.appendChild(bookGroup);
-        });
-    </script>
-{% endblock content %}
+<script>
+document.getElementById('checkIsbn').addEventListener('click', function() {
+    const isbn = document.getElementById('id_ISBN').value;
+    const bookInfo = document.getElementById('book-info');
+    
+    if (!isbn) {
+        bookInfo.innerHTML = '<p class="book-not-found">Пожалуйста, введите ISBN</p>';
+        return;
+    }
+    
+    bookInfo.innerHTML = '<p class="text-muted">Поиск книги...</p>';
+    
+    fetch(`/check-isbn/?isbn=${isbn}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.found) {
+            bookInfo.innerHTML = `
+                <p class="book-found">${data.book_name}</p>
+                <input type="hidden" name="book" value="${data.book_id}">
+            `;
+        } else {
+            bookInfo.innerHTML = '<p class="book-not-found">Книга не найдена</p>';
+        }
+    })
+    .catch(error => {
+        bookInfo.innerHTML = '<p class="book-not-found">Произошла ошибка при поиске книги</p>';
+    });
+});
+</script>
+{% endblock %}
