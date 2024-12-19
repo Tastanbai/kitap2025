@@ -372,17 +372,31 @@ def send_email(request):
 from .utils import create_books_from_excel
 
 
+# @login_required
+# def excel(request):
+#     if request.method == 'POST':
+#         if 'file' in request.FILES:
+#             file = request.FILES['file']
+#             create_books_from_excel(file, request.user)
+#             return render(request, 'myapp/excel.html', {'message': 'Excel файл успешно загружен и обработан'})
+#         else:
+#             return render(request, 'myapp/excel.html', {'error': 'Файл не найден. Пожалуйста, загрузите файл.'})
+#     return render(request, 'myapp/excel.html')
+
+
 @login_required
 def excel(request):
     if request.method == 'POST':
         if 'file' in request.FILES:
             file = request.FILES['file']
-            create_books_from_excel(file, request.user)
-            return render(request, 'myapp/excel.html', {'message': 'Excel файл успешно загружен и обработан'})
+            try:
+                create_books_from_excel(file, request.user)
+                return render(request, 'myapp/excel.html', {'message': 'Excel файл успешно загружен и обработан'})
+            except Exception as e:
+                return render(request, 'myapp/excel.html', {'error': f'Ошибка обработки файла: {e}'})
         else:
             return render(request, 'myapp/excel.html', {'error': 'Файл не найден. Пожалуйста, загрузите файл.'})
     return render(request, 'myapp/excel.html')
-
 
 
 # @login_required
