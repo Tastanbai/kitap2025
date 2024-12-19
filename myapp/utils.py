@@ -37,7 +37,6 @@ def create_books_from_excel(file, user):
             user=user
         )
 
-
 import pandas as pd
 import logging
 from .models import Book
@@ -49,22 +48,29 @@ def create_books_from_excel(file, user):
 
     for index, row in df.iterrows():
         try:
-            balance_quantity = pd.to_numeric(row['Остаток книг'], errors='coerce')
-            quantity = pd.to_numeric(row['Количество'], errors='coerce')
+            # Преобразование данных
+            isbn = str(row['Книжный номер']).strip() if not pd.isna(row['Книжный номер']) else ''
+            quantity = int(row['Количество']) if not pd.isna(row['Количество']) else 0
+            balance_quantity = int(row['Остаток книг']) if not pd.isna(row['Остаток книг']) else 0
+            year_published = int(row['Год издания']) if not pd.isna(row['Год издания']) else 0
+            bbk = str(row['BBK']).strip() if not pd.isna(row['BBK']) else ''
+            name = str(row['Название книги'])[:255] if not pd.isna(row['Название книги']) else ''
+            author = str(row['Автор'])[:255] if not pd.isna(row['Автор']) else ''
 
-            if pd.isna(balance_quantity) or pd.isna(quantity):
-                logger.error(f"Некорректные данные в строке {index}: {row}")
-                continue
-
-            Book.objects.create(
-                ISBN=row['Книжный номер'],
-                author=row['Автор'],
-                name=row['Название книги'],
-                bbk=row['BBK'],
-                quantity=int(quantity),
-                balance_quantity=int(balance_quantity),
-                year_published=row['Год издания'],
-                user=user
-            )
+            # Проверка наличия записи
+            if not Book.objects.filter(ISBN=isbn, user=user).exists():
+                Book.objects.create(
+                    ISBN=isbn,
+                    author=author,
+                    name=name,
+                    bbk=bbk,
+                    quantity=quantity,
+                    balance_quantity=balance_quantity,
+                    year_published=year_published,
+                    user=user
+                )
+                logger.info(f"Добавлена книга: {name}, ISBN: {isbn}")
+            else:
+                logger.warning(f"Книга с ISBN {isbn} уже существует в базе данных.")
         except Exception as e:
-            logger.error(f"Ошибка обработки строки {index}: {row}. Ошибка: {e}")
+            logger.error(f"Ошибка в строке {index} (ISBN: {row['Книжный номер']}): {e}")
