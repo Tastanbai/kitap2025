@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-c+e!0t5&72fd3&!!-*rakq$j^-5x=c^tv^$brvz5lh*--10xmx
 DEBUG = False
 
 
-ALLOWED_HOSTS = ['kitap-nomad.kz']
+ALLOWED_HOSTS = ['77.246.247.59']
 
 # Application definition
 
