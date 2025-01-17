@@ -94,7 +94,7 @@ from django.contrib.auth.models import User
 class RegForm(forms.Form):
     name = forms.CharField(
         min_length=5,
-        label='Имя пользователя',
+        label='Имя Школы',
         error_messages={
             'required': 'Имя пользователя не может быть пустым',
             'min_length': 'Не менее 6 символов',
@@ -108,7 +108,7 @@ class RegForm(forms.Form):
 
     lastname = forms.CharField(
         min_length=2,
-        label='Фамилия пользователя',
+        label='БИН Школы',
         required=True,
         error_messages={
             'required': 'Фамилия пользователя не может быть пустой',

@@ -994,50 +994,291 @@ from django.contrib import messages
 from .forms import PublishForm
 from .models import Book, Publish
 
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+    
+#     # Определяем текущую школу
+#     current_school = request.user.first_name
+#     school_table = f"{current_school}"
+
+# from django.db import connection
+# from django.shortcuts import render, redirect, get_object_or_404
+# from django.contrib.auth.decorators import login_required
+# from django.urls import reverse
+# from django.core.mail import send_mail
+# from django.contrib import messages
+# from .forms import PublishForm
+# from .models import Book, Publish
+
+# @login_required
+# def add_publish(request):
+#     user_books = Book.objects.filter(user=request.user)
+    
+#     # Определяем текущую школу
+#     current_school = request.user.first_name
+#     school_table = f"{current_school}"
+
+#     # Получение последнего card, a1 и data из таблицы школы
+#     last_card = None
+#     last_a1 = None
+#     last_data = None
+#     try:
+#         with connection.cursor() as cursor:
+#             query = f"SELECT card, a1, data FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
+#             cursor.execute(query)
+#             row = cursor.fetchone()
+#             if row:
+#                 last_card = row[0]  # card
+#                 last_a1 = row[1]    # a1
+#                 last_data = row[2]  # data
+#                 if last_data:
+#                     last_data = last_data.split('T')[0]  # Взять часть до 'T'
+#                     last_data = '-'.join(reversed(last_data.split('.')))  # Преобразовать в формат дд.мм.гггг
+#                     print(f"Значение last_data: {last_data}")  
+#     except Exception as e: 
+#         print(f"Ошибка доступа к таблице {school_table}: {e}")
+
+#     if request.method == 'POST':
+#         form = PublishForm(request.POST)
+#         form.fields['book'].queryset = user_books
+
+#         # Проверка ISBN
+#         isbn = request.POST.get('ISBN')
+#         if isbn:
+#             existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
+#             if existing_book:
+#                 messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
+#                 # Предзаполняем форму найденной книгой
+#                 form = PublishForm(request.POST, initial={'book': [existing_book.id]})
+#                 form.fields['book'].queryset = user_books
+#             else:
+#                 messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
+#                 return render(request, 'myapp/add_publish.html', {'form': form})
+
+#         if form.is_valid():
+#             books_data = request.POST.getlist('book')
+#             quantities = request.POST.getlist('quantity')
+#             name = form.cleaned_data['name']
+#             errors = False
+
+#             # Проверка доступного количества книг
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+#                 if book_instance.balance_quantity < int(quantity):
+#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+#                     errors = True
+
+#             if errors:
+#                 return render(request, 'myapp/add_publish.html', {'form': form})
+
+#             # Создание записей публикации
+#             publish_instances = []
+#             for book_id, quantity in zip(books_data, quantities):
+#                 book_instance = get_object_or_404(Book, pk=book_id)
+
+#                 publish_instance = Publish(
+#                     user=request.user,
+#                     name=name,
+#                     iin=form.cleaned_data['iin'],
+#                     date_out=form.cleaned_data['date_out'] or last_data,
+#                     date_in=form.cleaned_data['date_in'],
+#                     city=form.cleaned_data['city'],
+#                     email=form.cleaned_data['email'],
+#                     phone=form.cleaned_data['phone'],
+#                     book=book_instance,
+#                     quantity=quantity
+#                 )
+#                 publish_instances.append(publish_instance)
+#                 book_instance.balance_quantity -= int(quantity)
+#                 book_instance.save()
+
+#             Publish.objects.bulk_create(publish_instances)
+
+#             # Отправка email
+#             recipient_email = form.cleaned_data['email']
+#             send_mail(
+#                 'Подтверждение аренды книги',
+#                 f"""Уважаемый {name},
+
+#             Вы успешно арендовали следующие книги:
+
+#             - Книга: {book_instance.name}
+#             Количество: {quantity}
+#             Дата получения: {form.cleaned_data['date_out'] or last_data}
+#             Дата возврата: {form.cleaned_data['date_in']}
+
+#             Спасибо, что пользуетесь нашей библиотекой!
+#             """,
+#                 'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
+#                 [recipient_email],
+#                 fail_silently=False,
+#             )
+
+#             return redirect(reverse('myapp:rent_book'))
+#     else:
+#         # GET запрос - создаем новую форму с начальными данными
+#         form = PublishForm(initial={'iin': last_card, 
+#                                     'name': last_a1, 
+#                                     'date_out': last_data or date.today().strftime('%Y-%m-%d')
+#                                     })
+#         form.fields['book'].queryset = user_books
+
+#         print(f"Инициализация формы: {form.initial}")
+
+#     return render(request, 'myapp/add_publish.html', {'form': form})
+
+
+    # # Получение последнего card, a1 и data из таблицы школы
+    # last_card = None
+    # last_a1 = None
+    # last_data = None
+    # try:
+    #     with connection.cursor() as cursor:
+    #         query = f"SELECT card, a1, data FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
+    #         cursor.execute(query)
+    #         row = cursor.fetchone()
+    #         if row:
+    #             last_card = row[0]  # card
+    #             last_a1 = row[1]    # a1
+    #             last_data = row[2]  # data
+    #             if last_data:
+    #                 last_data = last_data.split('T')[0]  # Взять часть до 'T'
+    #                 last_data = '-'.join(reversed(last_data.split('.')))  # Преобразовать в формат дд.мм.гггг
+    #                 print(f"Значение last_data: {last_data}")  
+    # except Exception as e: 
+    #     print(f"Ошибка доступа к таблице {school_table}: {e}")
+
+    # if request.method == 'POST':
+    #     form = PublishForm(request.POST)
+    #     form.fields['book'].queryset = user_books
+
+    #     # Проверка ISBN
+    #     isbn = request.POST.get('ISBN')
+    #     if isbn:
+    #         existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
+    #         if existing_book:
+    #             messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
+    #             # Предзаполняем форму найденной книгой
+    #             form = PublishForm(request.POST, initial={'book': [existing_book.id]})
+    #             form.fields['book'].queryset = user_books
+    #         else:
+    #             messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
+    #             return render(request, 'myapp/add_publish.html', {'form': form})
+
+    #     if form.is_valid():
+    #         books_data = request.POST.getlist('book')
+    #         quantities = request.POST.getlist('quantity')
+    #         name = form.cleaned_data['name']
+    #         errors = False
+
+    #         # Проверка доступного количества книг
+    #         for book_id, quantity in zip(books_data, quantities):
+    #             book_instance = get_object_or_404(Book, pk=book_id)
+    #             if book_instance.balance_quantity < int(quantity):
+    #                 form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
+    #                 errors = True
+
+    #         if errors:
+    #             return render(request, 'myapp/add_publish.html', {'form': form})
+
+    #         # Создание записей публикации
+    #         publish_instances = []
+    #         for book_id, quantity in zip(books_data, quantities):
+    #             book_instance = get_object_or_404(Book, pk=book_id)
+
+    #             publish_instance = Publish(
+    #                 user=request.user,
+    #                 name=name,
+    #                 iin=form.cleaned_data['iin'],
+    #                 date_out=form.cleaned_data['date_out'] or last_data,
+    #                 date_in=form.cleaned_data['date_in'],
+    #                 city=form.cleaned_data['city'],
+    #                 email=form.cleaned_data['email'],
+    #                 phone=form.cleaned_data['phone'],
+    #                 book=book_instance,
+    #                 quantity=quantity
+    #             )
+    #             publish_instances.append(publish_instance)
+    #             book_instance.balance_quantity -= int(quantity)
+    #             book_instance.save()
+
+    #         Publish.objects.bulk_create(publish_instances)
+
+    #         # Отправка email
+    #         recipient_email = form.cleaned_data['email']
+    #         send_mail(
+    #             'Подтверждение аренды книги',
+    #             f"""Уважаемый {name},
+
+    #         Вы успешно арендовали следующие книги:
+
+    #         - Книга: {book_instance.name}
+    #         Количество: {quantity}
+    #         Дата получения: {form.cleaned_data['date_out'] or last_data}
+    #         Дата возврата: {form.cleaned_data['date_in']}
+
+    #         Спасибо, что пользуетесь нашей библиотекой!
+    #         """,
+    #             'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
+    #             [recipient_email],
+    #             fail_silently=False,
+    #         )
+
+    #         return redirect(reverse('myapp:rent_book'))
+    # else:
+    #     # GET запрос - создаем новую форму с начальными данными
+    #     form = PublishForm(initial={'iin': last_card, 
+    #                                 'name': last_a1, 
+    #                                 'date_out': last_data or date.today().strftime('%Y-%m-%d')
+    #                                 })
+    #     form.fields['book'].queryset = user_books
+
+    #     print(f"Инициализация формы: {form.initial}")
+
+    # return render(request, 'myapp/add_publish.html', {'form': form})
+
+
 @login_required
 def add_publish(request):
     user_books = Book.objects.filter(user=request.user)
     
-    # Определяем текущую школу
-    current_school = request.user.first_name
-    school_table = f"{current_school}"
+    # Получение значения БИН школы (lastname)
+    school_bin = request.user.first_name  # Переданный БИН школы при регистрации
+    last_record = None
 
-    # Получение последнего card, a1 и data из таблицы школы
-    last_card = None
-    last_a1 = None
-    last_data = None
     try:
+        # Получение последней записи из таблицы kitap по совпадению hik с БИН школы
         with connection.cursor() as cursor:
-            query = f"SELECT card, a1, data FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
-            cursor.execute(query)
+            query = """
+                SELECT card, a1, data 
+                FROM kitap 
+                WHERE hik = %s 
+                ORDER BY id DESC 
+                LIMIT 1
+            """
+            print(f"SQL-запрос: {query} с параметром hik = {school_bin}")  # Отладка: SQL-запрос
+            cursor.execute(query, [school_bin])
             row = cursor.fetchone()
             if row:
-                last_card = row[0]  # card
-                last_a1 = row[1]    # a1
-                last_data = row[2]  # data
-                if last_data:
-                    last_data = last_data.split('T')[0]  # Взять часть до 'T'
-                    last_data = '-'.join(reversed(last_data.split('.')))  # Преобразовать в формат дд.мм.гггг
-                    print(f"Значение last_data: {last_data}")  
-    except Exception as e: 
-        print(f"Ошибка доступа к таблице {school_table}: {e}")
+               
+                last_record = {
+                    'card': row[0],
+                    'a1': row[1],
+                    'data': row[2].split('T')[0] if row[2] else None
+                }
+            else:
+                print("Нет данных для указанного hik")
+    except Exception as e:
+        print(f"Ошибка при доступе к таблице 'kitap': {e}")
+
+   
 
     if request.method == 'POST':
         form = PublishForm(request.POST)
         form.fields['book'].queryset = user_books
 
-        # Проверка ISBN
-        isbn = request.POST.get('ISBN')
-        if isbn:
-            existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
-            if existing_book:
-                messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
-                # Предзаполняем форму найденной книгой
-                form = PublishForm(request.POST, initial={'book': [existing_book.id]})
-                form.fields['book'].queryset = user_books
-            else:
-                messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
-                return render(request, 'myapp/add_publish.html', {'form': form})
+        print(f"POST-данные: {request.POST}")  # Отладка: POST-данные
 
         if form.is_valid():
             books_data = request.POST.getlist('book')
@@ -1059,12 +1300,11 @@ def add_publish(request):
             publish_instances = []
             for book_id, quantity in zip(books_data, quantities):
                 book_instance = get_object_or_404(Book, pk=book_id)
-
                 publish_instance = Publish(
                     user=request.user,
                     name=name,
-                    iin=form.cleaned_data['iin'],
-                    date_out=form.cleaned_data['date_out'] or last_data,
+                    iin=form.cleaned_data['iin'] or last_record.get('card'),
+                    date_out=form.cleaned_data['date_out'] or last_record.get('data'),
                     date_in=form.cleaned_data['date_in'],
                     city=form.cleaned_data['city'],
                     email=form.cleaned_data['email'],
@@ -1076,6 +1316,8 @@ def add_publish(request):
                 book_instance.balance_quantity -= int(quantity)
                 book_instance.save()
 
+            print(f"Публикации на создание: {[{'book': p.book.name, 'quantity': p.quantity} for p in publish_instances]}")  # Отладка: создаваемые записи
+
             Publish.objects.bulk_create(publish_instances)
 
             # Отправка email
@@ -1084,29 +1326,30 @@ def add_publish(request):
                 'Подтверждение аренды книги',
                 f"""Уважаемый {name},
 
-            Вы успешно арендовали следующие книги:
+Вы успешно арендовали следующие книги:
 
-            - Книга: {book_instance.name}
-            Количество: {quantity}
-            Дата получения: {form.cleaned_data['date_out'] or last_data}
-            Дата возврата: {form.cleaned_data['date_in']}
+- Книга: {book_instance.name}
+Количество: {quantity}
+Дата получения: {form.cleaned_data['date_out'] or last_record.get('data')}
+Дата возврата: {form.cleaned_data['date_in']}
 
-            Спасибо, что пользуетесь нашей библиотекой!
-            """,
-                'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
+Спасибо, что пользуетесь нашей библиотекой!
+""",
+                'kitaphana@oqz.kz',
                 [recipient_email],
                 fail_silently=False,
             )
 
             return redirect(reverse('myapp:rent_book'))
     else:
-        # GET запрос - создаем новую форму с начальными данными
-        form = PublishForm(initial={'iin': last_card, 
-                                    'name': last_a1, 
-                                    'date_out': last_data or date.today().strftime('%Y-%m-%d')
-                                    })
+        # GET-запрос: создаём форму с начальными данными из последней записи
+        form = PublishForm(initial={
+            'iin': last_record.get('card') if last_record else None,
+            'name': last_record.get('a1') if last_record else None,
+            'date_out': last_record.get('data') if last_record else date.today().strftime('%Y-%m-%d')
+        })
         form.fields['book'].queryset = user_books
 
-        print(f"Инициализация формы: {form.initial}")
+        print(f"Инициализация формы: {form.initial}")  # Отладка: Начальные данные формы
 
     return render(request, 'myapp/add_publish.html', {'form': form})
