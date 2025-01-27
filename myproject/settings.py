@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-c+e!0t5&72fd3&!!-*rakq$j^-5x=c^tv^$brvz5lh*--10xmx'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG =False
+DEBUG = False
 
-ALLOWED_HOSTS = ['tabet-kitap.kz']
+ALLOWED_HOSTS = ['kitap-nomad.kz']
 
 # Application definition
 
@@ -85,10 +85,10 @@ WSGI_APPLICATION = 'myproject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'kitapdb',
-        'USER': 'kitapdb',
-        'PASSWORD': '123qweASD?',
-        'HOST': '77.246.247.59',
+        'NAME': 'ospan',
+        'USER': 'ospan',
+        'PASSWORD': 'ospan',
+        'HOST': '185.129.49.37',
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
