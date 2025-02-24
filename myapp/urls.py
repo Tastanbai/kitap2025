@@ -24,4 +24,6 @@ urlpatterns = [
     path('delete_books/', views.delete_books, name='delete_books'),
     path('select_all_books/', views.select_all_books, name='select_all_books'),
     path('check-isbn/', views.check_isbn, name='check_isbn'),
+    path("generate/", views.generate_and_download_barcodes, name="generate_barcodes"),
+    path("generate_copies/", views.generate_and_download_copies, name="generate_copies")
 ]
