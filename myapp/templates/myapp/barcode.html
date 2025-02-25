@@ -131,15 +131,16 @@
     </div>
 </div>
 
-<div class="container">
+<!-- <div class="container">
     <h1>Генератор копий штрих‑кода</h1>
-    <form method="post" action="{% url 'myapp:generate_copies' %}">
+    <form method="post" action="">
         {% csrf_token %}
         <label for="copies_count">Сколько копий создать:</label>
         <input type="number" id="copies_count" name="copies_count" min="1" max="1000" required>
         <button type="submit">Создать и скачать ZIP с копиями</button>
     </form>
-</div>
+</div> -->
+
 
 {% endblock content %}   
 

@@ -123,13 +123,13 @@
     </div>
 
     <div class="form-group">
-        <label for="id_ISBN">ISBN</label>
+        <label for="id_ISBN">Штрих код</label>
         <div class="isbn-group">
             <div class="isbn-input">
                 {{ form.ISBN }}
                 <span class="error_info">{{ form.ISBN.errors.0 }}</span>
             </div>
-            <button type="button" id="checkIsbn" class="btn btn-primary">Проверить ISBN</button>
+            <button type="button" id="checkIsbn" class="btn btn-primary">Проверить штрих код</button>
         </div>
     </div>
 
@@ -142,7 +142,7 @@
                         <p class="book-found">{{ found_book.name }}</p>
                         <input type="hidden" name="book" value="{{ found_book.id }}">
                     {% else %}
-                        <p class="text-muted">Введите ISBN и нажмите "Проверить ISBN"</p>
+                        <p class="text-muted">Введите штрих код и нажмите "Проверить штрих код"</p>
                     {% endif %}
                 </div>
             </div>
@@ -164,7 +164,7 @@ document.getElementById('checkIsbn').addEventListener('click', function() {
     const bookInfo = document.getElementById('book-info');
     
     if (!isbn) {
-        bookInfo.innerHTML = '<p class="book-not-found">Пожалуйста, введите ISBN</p>';
+        bookInfo.innerHTML = '<p class="book-not-found">Пожалуйста, введите штрих код</p>';
         return;
     }
     

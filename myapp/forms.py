@@ -42,7 +42,7 @@ class BookForm(forms.ModelForm):
         )
 
         labels = {
-            'ISBN': 'ISBN',
+            'ISBN': 'Штрих код',
             'name': 'Название',
             'bbk': 'ББК',
             'quantity': 'Количество',
@@ -195,7 +195,7 @@ class PublishForm(forms.ModelForm):
         max_length=255,
         label="ISBN",
         required=False,
-        widget=TextInput(attrs={"class": "form-control", "placeholder": "Введите ISBN для поиска книги"}),
+        widget=TextInput(attrs={"class": "form-control", "placeholder": "Введите штрих код для поиска"}),
         help_text="Введите ISBN книги для автоматического выбора."
     )
 

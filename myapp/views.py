@@ -1356,158 +1356,192 @@ def add_publish(request):
 
 
 
+# from django.shortcuts import render
+# from django.http import HttpResponse
+# import barcode
+# from barcode.writer import ImageWriter
+# import random
+# import os
+# import shutil
+# import zipfile
+# import time
+# from io import BytesIO
+# from django.conf import settings
+# from PIL import Image
+
+# # Абсолютный путь к папке штрих-кодов
+# BARCODE_FOLDER = os.path.abspath(os.path.join(settings.BASE_DIR, "static", "barcodes"))
+
+# def generate_and_download_barcodes(request):
+#     if request.method == "POST":
+#         count = int(request.POST.get("count", 1))
+
+#         # Очищаем папку перед созданием новых штрих-кодов
+#         if os.path.exists(BARCODE_FOLDER):
+#             shutil.rmtree(BARCODE_FOLDER)
+#         os.makedirs(BARCODE_FOLDER, exist_ok=True)
+
+#         barcode_files = []
+
+#         for i in range(count):
+#             random_number = ''.join(str(random.randint(0, 9)) for _ in range(12))
+#             ean = barcode.get('ean13', random_number, writer=ImageWriter())
+
+#             # Сохраняем штрих-код и получаем имя файла (расширение добавляется автоматически)
+#             saved_filename = ean.save(os.path.join(BARCODE_FOLDER, f"штрих-код_{i+1}"))
+#             filepath = os.path.abspath(saved_filename)
+
+#             # Ждем, чтобы файл успел записаться
+#             time.sleep(1)
+
+#             if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+#                 try:
+#                     with Image.open(filepath) as img:
+#                         img.verify()
+#                     print(f"✅ Файл успешно создан: {filepath} (размер: {os.path.getsize(filepath)} байт)")
+#                     barcode_files.append(filepath)
+#                 except Exception as e:
+#                     print(f"❌ Ошибка: Файл повреждён ({filepath}): {e}")
+#             else:
+#                 print(f"❌ Ошибка: Файл пустой или не записался: {filepath}")
+
+#         if not barcode_files:
+#             return HttpResponse("❌ Ошибка: Ни один файл не записался корректно!", status=500)
+
+#         # Создаем ZIP-архив
+#         zip_buffer = BytesIO()
+#         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+#             for file_path in barcode_files:
+#                 zipf.write(file_path, os.path.basename(file_path))
+#                 print(f"📦 Добавлено в ZIP: {file_path}")
+
+#         zip_buffer.seek(0)
+
+#         # После создания архива удаляем старые файлы
+#         shutil.rmtree(BARCODE_FOLDER)
+#         print(f"🗑️ Папка {BARCODE_FOLDER} удалена.")
+
+#         response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
+#         response["Content-Disposition"] = 'attachment; filename="штрих-код.zip"'
+#         return response
+
+#     return render(request, "myapp/barcode.html")
+
+
+# from django.shortcuts import render
+# from django.http import HttpResponse
+# import barcode
+# from barcode.writer import ImageWriter
+# import random
+# import os
+# import shutil
+# import zipfile
+# import time
+# from io import BytesIO
+# from django.conf import settings
+# from PIL import Image
+
+# # Абсолютный путь к папке для штрих‑кодов
+# BARCODE_FOLDER = os.path.abspath(os.path.join(settings.BASE_DIR, "static", "barcodes"))
+
+# def generate_and_download_copies(request):
+#     """
+#     Генерирует один штрих‑код (EAN-13) и затем создает указанное число копий этого штрих‑кода.
+#     После упаковки копий в ZIP‑архив исходная папка удаляется.
+#     """
+#     if request.method == "POST":
+#         copies_count = int(request.POST.get("copies_count", 1))
+        
+#         # Очищаем папку перед созданием новых штрих‑кодов
+#         if os.path.exists(BARCODE_FOLDER):
+#             shutil.rmtree(BARCODE_FOLDER)
+#         os.makedirs(BARCODE_FOLDER, exist_ok=True)
+        
+#         # Генерируем один базовый штрих‑код
+#         random_number = ''.join(str(random.randint(0, 9)) for _ in range(12))
+#         ean = barcode.get('ean13', random_number, writer=ImageWriter())
+#         # Сохраняем базовый штрих‑код без добавления расширения вручную (ean.save добавит его сам)
+#         saved_filename = ean.save(os.path.join(BARCODE_FOLDER, "barcode"))
+#         base_filepath = os.path.abspath(saved_filename)
+        
+#         # Дадим время на запись файла
+#         time.sleep(1)
+        
+#         # Проверяем, что базовый файл записался
+#         if not (os.path.exists(base_filepath) and os.path.getsize(base_filepath) > 0):
+#             return HttpResponse("❌ Ошибка: Базовый штрих‑код не записался корректно!", status=500)
+#         try:
+#             with Image.open(base_filepath) as img:
+#                 img.verify()
+#             print(f"✅ Базовый штрих‑код успешно создан: {base_filepath} (размер: {os.path.getsize(base_filepath)} байт)")
+#         except Exception as e:
+#             return HttpResponse(f"❌ Ошибка: Базовый штрих‑код повреждён: {e}", status=500)
+        
+#         # Создаем копии базового штрих‑кода
+#         barcode_files = []
+#         for i in range(copies_count):
+#             copy_filename = f"barcode_copy_{i+1}.png"
+#             copy_filepath = os.path.join(BARCODE_FOLDER, copy_filename)
+#             # Просто копируем базовый файл
+#             shutil.copy(base_filepath, copy_filepath)
+#             time.sleep(0.5)
+#             if os.path.exists(copy_filepath) and os.path.getsize(copy_filepath) > 0:
+#                 barcode_files.append(copy_filepath)
+#                 print(f"✅ Копия создана: {copy_filepath} (размер: {os.path.getsize(copy_filepath)} байт)")
+#             else:
+#                 print(f"❌ Ошибка: Не удалось создать копию: {copy_filepath}")
+        
+#         if not barcode_files:
+#             return HttpResponse("❌ Ошибка: Ни одна копия не создана корректно!", status=500)
+        
+#         # Создаем ZIP‑архив с копиями
+#         zip_buffer = BytesIO()
+#         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+#             for file_path in barcode_files:
+#                 zipf.write(file_path, os.path.basename(file_path))
+#                 print(f"📦 Добавлено в ZIP: {file_path}")
+#         zip_buffer.seek(0)
+        
+#         # Удаляем исходную папку с штрих‑кодами
+#         shutil.rmtree(BARCODE_FOLDER)
+#         print(f"🗑️ Папка {BARCODE_FOLDER} удалена.")
+        
+#         response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
+#         response["Content-Disposition"] = 'attachment; filename="barcode_copies.zip"'
+#         return response
+
+#     return render(request, "myapp/barcode.html")
 from django.shortcuts import render
 from django.http import HttpResponse
 import barcode
 from barcode.writer import ImageWriter
 import random
-import os
-import shutil
-import zipfile
-import time
 from io import BytesIO
-from django.conf import settings
-from PIL import Image
-
-# Абсолютный путь к папке штрих-кодов
-BARCODE_FOLDER = os.path.abspath(os.path.join(settings.BASE_DIR, "static", "barcodes"))
+import zipfile
 
 def generate_and_download_barcodes(request):
     if request.method == "POST":
         count = int(request.POST.get("count", 1))
-
-        # Очищаем папку перед созданием новых штрих-кодов
-        if os.path.exists(BARCODE_FOLDER):
-            shutil.rmtree(BARCODE_FOLDER)
-        os.makedirs(BARCODE_FOLDER, exist_ok=True)
-
-        barcode_files = []
-
-        for i in range(count):
-            random_number = ''.join(str(random.randint(0, 9)) for _ in range(12))
-            ean = barcode.get('ean13', random_number, writer=ImageWriter())
-
-            # Сохраняем штрих-код и получаем имя файла (расширение добавляется автоматически)
-            saved_filename = ean.save(os.path.join(BARCODE_FOLDER, f"barcode_{i+1}"))
-            filepath = os.path.abspath(saved_filename)
-
-            # Ждем, чтобы файл успел записаться
-            time.sleep(1)
-
-            if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
-                try:
-                    with Image.open(filepath) as img:
-                        img.verify()
-                    print(f"✅ Файл успешно создан: {filepath} (размер: {os.path.getsize(filepath)} байт)")
-                    barcode_files.append(filepath)
-                except Exception as e:
-                    print(f"❌ Ошибка: Файл повреждён ({filepath}): {e}")
-            else:
-                print(f"❌ Ошибка: Файл пустой или не записался: {filepath}")
-
-        if not barcode_files:
-            return HttpResponse("❌ Ошибка: Ни один файл не записался корректно!", status=500)
-
-        # Создаем ZIP-архив
+        # Ограничение убрано – теперь количество штрих-кодов определяется значением count
+        
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for file_path in barcode_files:
-                zipf.write(file_path, os.path.basename(file_path))
-                print(f"📦 Добавлено в ZIP: {file_path}")
+            for i in range(count):
+                # Генерируем 12-значный случайный номер
+                random_number = ''.join(str(random.randint(0, 9)) for _ in range(12))
+                ean = barcode.get('ean13', random_number, writer=ImageWriter())
+                
+                # Генерируем штрих-код в памяти
+                barcode_buffer = BytesIO()
+                ean.write(barcode_buffer)
+                barcode_buffer.seek(0)
+                
+                # Добавляем изображение штрих-кода в ZIP-архив
+                zipf.writestr(f"штрих-код_{i+1}.png", barcode_buffer.read())
 
         zip_buffer.seek(0)
-
-        # После создания архива удаляем старые файлы
-        shutil.rmtree(BARCODE_FOLDER)
-        print(f"🗑️ Папка {BARCODE_FOLDER} удалена.")
-
         response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
-        response["Content-Disposition"] = 'attachment; filename="barcodes.zip"'
-        return response
-
-    return render(request, "myapp/barcode.html")
-
-
-from django.shortcuts import render
-from django.http import HttpResponse
-import barcode
-from barcode.writer import ImageWriter
-import random
-import os
-import shutil
-import zipfile
-import time
-from io import BytesIO
-from django.conf import settings
-from PIL import Image
-
-# Абсолютный путь к папке для штрих‑кодов
-BARCODE_FOLDER = os.path.abspath(os.path.join(settings.BASE_DIR, "static", "barcodes"))
-
-def generate_and_download_copies(request):
-    """
-    Генерирует один штрих‑код (EAN-13) и затем создает указанное число копий этого штрих‑кода.
-    После упаковки копий в ZIP‑архив исходная папка удаляется.
-    """
-    if request.method == "POST":
-        copies_count = int(request.POST.get("copies_count", 1))
-        
-        # Очищаем папку перед созданием новых штрих‑кодов
-        if os.path.exists(BARCODE_FOLDER):
-            shutil.rmtree(BARCODE_FOLDER)
-        os.makedirs(BARCODE_FOLDER, exist_ok=True)
-        
-        # Генерируем один базовый штрих‑код
-        random_number = ''.join(str(random.randint(0, 9)) for _ in range(12))
-        ean = barcode.get('ean13', random_number, writer=ImageWriter())
-        # Сохраняем базовый штрих‑код без добавления расширения вручную (ean.save добавит его сам)
-        saved_filename = ean.save(os.path.join(BARCODE_FOLDER, "barcode"))
-        base_filepath = os.path.abspath(saved_filename)
-        
-        # Дадим время на запись файла
-        time.sleep(1)
-        
-        # Проверяем, что базовый файл записался
-        if not (os.path.exists(base_filepath) and os.path.getsize(base_filepath) > 0):
-            return HttpResponse("❌ Ошибка: Базовый штрих‑код не записался корректно!", status=500)
-        try:
-            with Image.open(base_filepath) as img:
-                img.verify()
-            print(f"✅ Базовый штрих‑код успешно создан: {base_filepath} (размер: {os.path.getsize(base_filepath)} байт)")
-        except Exception as e:
-            return HttpResponse(f"❌ Ошибка: Базовый штрих‑код повреждён: {e}", status=500)
-        
-        # Создаем копии базового штрих‑кода
-        barcode_files = []
-        for i in range(copies_count):
-            copy_filename = f"barcode_copy_{i+1}.png"
-            copy_filepath = os.path.join(BARCODE_FOLDER, copy_filename)
-            # Просто копируем базовый файл
-            shutil.copy(base_filepath, copy_filepath)
-            time.sleep(0.5)
-            if os.path.exists(copy_filepath) and os.path.getsize(copy_filepath) > 0:
-                barcode_files.append(copy_filepath)
-                print(f"✅ Копия создана: {copy_filepath} (размер: {os.path.getsize(copy_filepath)} байт)")
-            else:
-                print(f"❌ Ошибка: Не удалось создать копию: {copy_filepath}")
-        
-        if not barcode_files:
-            return HttpResponse("❌ Ошибка: Ни одна копия не создана корректно!", status=500)
-        
-        # Создаем ZIP‑архив с копиями
-        zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for file_path in barcode_files:
-                zipf.write(file_path, os.path.basename(file_path))
-                print(f"📦 Добавлено в ZIP: {file_path}")
-        zip_buffer.seek(0)
-        
-        # Удаляем исходную папку с штрих‑кодами
-        shutil.rmtree(BARCODE_FOLDER)
-        print(f"🗑️ Папка {BARCODE_FOLDER} удалена.")
-        
-        response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
-        response["Content-Disposition"] = 'attachment; filename="barcode_copies.zip"'
+        response["Content-Disposition"] = 'attachment; filename="штрих-коды.zip"'
         return response
 
     return render(request, "myapp/barcode.html")
