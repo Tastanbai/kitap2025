@@ -25,5 +25,8 @@ urlpatterns = [
     path('select_all_books/', views.select_all_books, name='select_all_books'),
     path('check-isbn/', views.check_isbn, name='check_isbn'),
     path("generate/", views.generate_and_download_barcodes, name="generate_barcodes"),
-    # path("generate_copies/", views.generate_and_download_copies, name="generate_copies")
+    path('api/borrows/', views.api_school_borrows, name='api_school_borrows'),
+    path('api/books/', views.api_school_books, name='api_school_books'),   
+  # path("generate_copies/", views.generate_and_download_copies, name="generate_copies")
 ]
+

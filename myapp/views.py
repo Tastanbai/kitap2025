@@ -1545,3 +1545,230 @@ def generate_and_download_barcodes(request):
         return response
 
     return render(request, "myapp/barcode.html")
+
+
+
+import base64
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.contrib.auth import authenticate
+from django.utils.dateparse import parse_date
+from .models import Publish
+
+def _basic_auth_user(request):
+    auth = request.META.get('HTTP_AUTHORIZATION', '')
+    if not auth.startswith('Basic '):
+        return None
+    try:
+        decoded = base64.b64decode(auth.split(' ', 1)[1]).decode('utf-8')
+        username, password = decoded.split(':', 1)
+    except Exception:
+        return None
+    return authenticate(request, username=username, password=password)
+
+@require_GET
+def api_school_borrows(request):
+    user = _basic_auth_user(request)
+    if not user:
+        resp = JsonResponse({'detail': 'Unauthorized'})
+        resp.status_code = 401
+        resp['WWW-Authenticate'] = 'Basic realm="School API"'
+        return resp
+
+    qs = Publish.objects.filter(user=user).select_related('book')
+
+    # Фильтры по датам (с валидацией формата)
+    since_str = request.GET.get('since') or ''
+    until_str = request.GET.get('until') or ''
+    since = parse_date(since_str) if since_str else None
+    until = parse_date(until_str) if until_str else None
+    if since_str and not since:
+        return JsonResponse({'detail': 'since must be YYYY-MM-DD'}, status=400)
+    if until_str and not until:
+        return JsonResponse({'detail': 'until must be YYYY-MM-DD'}, status=400)
+    if since:
+        qs = qs.filter(date_out__gte=since)
+    if until:
+        qs = qs.filter(date_out__lte=until)
+
+    # Сортировка
+    order = request.GET.get('order') or '-date_out'
+    allowed_orders = {'date_out', '-date_out', 'date_in', '-date_in'}
+    if order not in allowed_orders:
+        return JsonResponse({'detail': f'order must be one of {sorted(allowed_orders)}'}, status=400)
+    qs = qs.order_by(order)
+
+    # Пагинация
+    try:
+        limit = min(max(int(request.GET.get('limit', 100)), 1), 500)
+        offset = max(int(request.GET.get('offset', 0)), 0)
+    except ValueError:
+        return JsonResponse({'detail': 'limit/offset must be integers'}, status=400)
+
+    total = qs.count()
+    items = list(qs[offset:offset+limit])
+
+    # next/prev для удобной пагинации
+    next_offset = offset + limit if offset + limit < total else None
+    prev_offset = offset - limit if offset > 0 else None
+
+    data = {
+        'school': {
+            'username': user.username,   # например, "kemelbilim"
+            'bin': user.first_name,      # например, "200240023403"
+            'email': user.email,         # например, "kemelbilim@edu.kz"
+        },
+        'meta': {
+            'total': total,
+            'limit': limit,
+            'offset': offset,
+            'order': order,
+            'next': f'?limit={limit}&offset={next_offset}&order={order}' if next_offset is not None else None,
+            'prev': f'?limit={limit}&offset={max(prev_offset,0)}&order={order}' if prev_offset is not None else None,
+        },
+        'borrows': [
+            {
+                'name': p.name,
+                'iin': p.iin,
+                'book': {
+                    'id': p.book_id,
+                    'name': p.book.name,
+                    'isbn': p.book.ISBN,
+                },
+                'quantity': p.quantity,
+                'date_out': p.date_out,   # Django сам отдаст ISO 8601
+                'date_in': p.date_in,
+                'city': p.city,
+                'email': p.email,
+                'phone': p.phone,
+            }
+            for p in items
+        ]
+    }
+
+    # главное улучшение: читаемая кириллица
+    return JsonResponse(data, safe=True, json_dumps_params={'ensure_ascii': False})
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.db.models import Sum, Q
+# _basic_auth_user уже есть у вас рядом с api_school_borrows
+from .models import Book
+
+@require_GET
+def api_school_books(request):
+    """
+    JSON API: список книг для аутентифицированной школы (Basic Auth).
+    Поддерживает:
+      - q=<поиск по названию/автору/BBK/ISBN>
+      - author=<строка>
+      - isbn=<строка>
+      - bbk=<строка>
+      - year_min=<YYYY> & year_max=<YYYY>
+      - available=1  (только где balance_quantity > 0)
+      - order one of: name, -name, author, -author, bbk, -bbk, ISBN, -ISBN,
+                      quantity, -quantity, balance_quantity, -balance_quantity,
+                      year_published, -year_published
+      - limit (по умолчанию 100, максимум 500), offset (по умолчанию 0)
+    """
+    user = _basic_auth_user(request)
+    if not user:
+        resp = JsonResponse({'detail': 'Unauthorized'})
+        resp.status_code = 401
+        resp['WWW-Authenticate'] = 'Basic realm="School API"'
+        return resp
+
+    qs = Book.objects.filter(user=user)
+
+    # Поиск и фильтры
+    q = request.GET.get('q') or ''
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(author__icontains=q) |
+            Q(bbk__icontains=q) |
+            Q(ISBN__icontains=q)
+        )
+
+    author = request.GET.get('author')
+    if author:
+        qs = qs.filter(author__icontains=author)
+
+    isbn = request.GET.get('isbn')
+    if isbn:
+        qs = qs.filter(ISBN__icontains=isbn)
+
+    bbk = request.GET.get('bbk')
+    if bbk:
+        qs = qs.filter(bbk__icontains=bbk)
+
+    year_min = request.GET.get('year_min')
+    year_max = request.GET.get('year_max')
+    if year_min and year_min.isdigit():
+        qs = qs.filter(year_published__gte=int(year_min))
+    if year_max and year_max.isdigit():
+        qs = qs.filter(year_published__lte=int(year_max))
+
+    if request.GET.get('available') in ('1', 'true', 'yes'):
+        qs = qs.filter(balance_quantity__gt=0)
+
+    # Сортировка
+    order = request.GET.get('order') or 'name'
+    allowed_orders = {
+        'name','-name','author','-author','bbk','-bbk','ISBN','-ISBN',
+        'quantity','-quantity','balance_quantity','-balance_quantity',
+        'year_published','-year_published'
+    }
+    if order not in allowed_orders:
+        return JsonResponse({'detail': f'order must be one of {sorted(allowed_orders)}'}, status=400)
+    qs = qs.order_by(order)
+
+    # Пагинация
+    try:
+        limit = min(max(int(request.GET.get('limit', 100)), 1), 500)
+        offset = max(int(request.GET.get('offset', 0)), 0)
+    except ValueError:
+        return JsonResponse({'detail': 'limit/offset must be integers'}, status=400)
+
+    total = qs.count()
+    agg = qs.aggregate(total_quantity=Sum('quantity'), total_balance=Sum('balance_quantity'))
+    items = list(qs[offset:offset+limit])
+
+    # next/prev ссылки
+    next_offset = offset + limit if offset + limit < total else None
+    prev_offset = offset - limit if offset > 0 else None
+
+    data = {
+        'school': {
+            'username': user.username,      # напр. "kemelbilim"
+            'bin': user.first_name,         # напр. "200240023403"
+            'email': user.email,            # напр. "kemelbilim@edu.kz"
+        },
+        'meta': {
+            'total': total,
+            'limit': limit,
+            'offset': offset,
+            'order': order,
+            'next': f'?limit={limit}&offset={next_offset}&order={order}' if next_offset is not None else None,
+            'prev': f'?limit={limit}&offset={max(prev_offset,0)}&order={order}' if prev_offset is not None else None,
+        },
+        'totals': {
+            'quantity': agg['total_quantity'] or 0,
+            'balance_quantity': agg['total_balance'] or 0,
+        },
+        'books': [
+            {
+                'id': b.id,
+                'ISBN': b.ISBN,
+                'name': b.name,
+                'author': b.author,
+                'bbk': b.bbk,
+                'quantity': b.quantity,
+                'balance_quantity': b.balance_quantity,
+                'year_published': b.year_published,
+            } for b in items
+        ]
+    }
+    return JsonResponse(data, safe=True, json_dumps_params={'ensure_ascii': False})
+
