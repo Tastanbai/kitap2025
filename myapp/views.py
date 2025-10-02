@@ -535,21 +535,16 @@ def generate_and_download_barcodes(request):
     return render(request, "myapp/barcode.html")
 
 
-# views_api.py
-import base64
 from django.utils.dateparse import parse_date
 from django.db.models import Sum, Q
-
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
 from .models import Publish, Book
 
-# Если хочешь сохранить поддержку Basic параллельно с JWT:
 AUTH_CLASSES = [JWTAuthentication, BasicAuthentication]
 
 def _bad_request(msg):
@@ -558,12 +553,92 @@ def _bad_request(msg):
 @api_view(['GET'])
 @authentication_classes(AUTH_CLASSES)
 @permission_classes([IsAuthenticated])
+def api_school_books(request):
+    user = request.user
+    qs = Book.objects.filter(user=user)
+
+    # Фильтры (опционально)
+    q = request.query_params.get('q') or ''
+    if q:
+        qs = qs.filter(
+            Q(name__icontains=q) |
+            Q(author__icontains=q) |
+            Q(bbk__icontains=q) |
+            Q(ISBN__icontains=q)
+        )
+
+    author = request.query_params.get('author')
+    if author:
+        qs = qs.filter(author__icontains=author)
+
+    isbn = request.query_params.get('isbn')
+    if isbn:
+        qs = qs.filter(ISBN__icontains=isbn)
+
+    bbk = request.query_params.get('bbk')
+    if bbk:
+        qs = qs.filter(bbk__icontains=bbk)
+
+    y_min = request.query_params.get('year_min')
+    y_max = request.query_params.get('year_max')
+    if y_min and y_min.isdigit():
+        qs = qs.filter(year_published__gte=int(y_min))
+    if y_max and y_max.isdigit():
+        qs = qs.filter(year_published__lte=int(y_max))
+
+    if (request.query_params.get('available') or '').lower() in ('1', 'true', 'yes'):
+        qs = qs.filter(balance_quantity__gt=0)
+
+    # Сортировка (по умолчанию name)
+    order = request.query_params.get('order') or 'name'
+    allowed_orders = {
+        'name','-name','author','-author','bbk','-bbk','ISBN','-ISBN',
+        'quantity','-quantity','balance_quantity','-balance_quantity',
+        'year_published','-year_published'
+    }
+    if order not in allowed_orders:
+        return _bad_request(f'order must be one of {sorted(allowed_orders)}')
+    qs = qs.order_by(order)
+
+    # Агрегаты и выдача БЕЗ пагинации
+    agg = qs.aggregate(total_quantity=Sum('quantity'),
+                       total_balance=Sum('balance_quantity'))
+    items = list(qs)
+
+    data = {
+        'school': {
+            'username': user.username,
+            'bin': user.first_name,
+            'email': user.email,
+        },
+        'totals': {
+            'quantity': agg['total_quantity'] or 0,
+            'balance_quantity': agg['total_balance'] or 0,
+        },
+        'count': len(items),
+        'books': [
+            {
+                'id': b.id,
+                'ISBN': b.ISBN,
+                'name': b.name,
+                'author': b.author,
+                'bbk': b.bbk,
+                'quantity': b.quantity,
+                'balance_quantity': b.balance_quantity,
+                'year_published': b.year_published,
+            } for b in items
+        ]
+    }
+    return Response(data)
+
+@api_view(['GET'])
+@authentication_classes(AUTH_CLASSES)
+@permission_classes([IsAuthenticated])
 def api_school_borrows(request):
     user = request.user
-
     qs = Publish.objects.filter(user=user).select_related('book')
 
-    # даты
+    # Даты (опционально)
     since_str = request.query_params.get('since') or ''
     until_str = request.query_params.get('until') or ''
     since = parse_date(since_str) if since_str else None
@@ -577,30 +652,14 @@ def api_school_borrows(request):
     if until:
         qs = qs.filter(date_out__lte=until)
 
-    # сортировка
+    # Сортировка (по умолчанию -date_out)
     order = request.query_params.get('order') or '-date_out'
     allowed_orders = {'date_out', '-date_out', 'date_in', '-date_in'}
     if order not in allowed_orders:
         return _bad_request(f'order must be one of {sorted(allowed_orders)}')
     qs = qs.order_by(order)
 
-    # пагинация (LimitOffsetPagination DRF под капотом)
-    try:
-        limit = int(request.query_params.get('limit', request.parser_context['view'].paginator.default_limit or 100))
-        limit = max(1, min(limit, 500))
-    except Exception:
-        return _bad_request('limit must be integer')
-    try:
-        offset = int(request.query_params.get('offset', 0))
-        offset = max(0, offset)
-    except Exception:
-        return _bad_request('offset must be integer')
-
-    total = qs.count()
-    items = list(qs[offset:offset+limit])
-
-    next_offset = offset + limit if offset + limit < total else None
-    prev_offset = offset - limit if offset > 0 else None
+    items = list(qs)
 
     data = {
         'school': {
@@ -608,14 +667,7 @@ def api_school_borrows(request):
             'bin': user.first_name,
             'email': user.email,
         },
-        'meta': {
-            'total': total,
-            'limit': limit,
-            'offset': offset,
-            'order': order,
-            'next': f'?limit={limit}&offset={next_offset}&order={order}' if next_offset is not None else None,
-            'prev': f'?limit={limit}&offset={max(prev_offset,0)}&order={order}' if prev_offset is not None else None,
-        },
+        'count': len(items),
         'borrows': [
             {
                 'name': p.name,
@@ -632,96 +684,6 @@ def api_school_borrows(request):
                 'email': p.email,
                 'phone': p.phone,
             } for p in items
-        ]
-    }
-    return Response(data)
-
-@api_view(['GET'])
-@authentication_classes(AUTH_CLASSES)
-@permission_classes([IsAuthenticated])
-def api_school_books(request):
-    user = request.user
-    qs = Book.objects.filter(user=user)
-
-    q = request.query_params.get('q') or ''
-    if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(author__icontains=q) | Q(bbk__icontains=q) | Q(ISBN__icontains=q))
-
-    author = request.query_params.get('author')
-    if author: qs = qs.filter(author__icontains=author)
-
-    isbn = request.query_params.get('isbn')
-    if isbn: qs = qs.filter(ISBN__icontains=isbn)
-
-    bbk = request.query_params.get('bbk')
-    if bbk: qs = qs.filter(bbk__icontains=bbk)
-
-    y_min = request.query_params.get('year_min')
-    y_max = request.query_params.get('year_max')
-    if y_min and y_min.isdigit(): qs = qs.filter(year_published__gte=int(y_min))
-    if y_max and y_max.isdigit(): qs = qs.filter(year_published__lte=int(y_max))
-
-    if (request.query_params.get('available') or '').lower() in ('1','true','yes'):
-        qs = qs.filter(balance_quantity__gt=0)
-
-    order = request.query_params.get('order') or 'name'
-    allowed_orders = {
-        'name','-name','author','-author','bbk','-bbk','ISBN','-ISBN',
-        'quantity','-quantity','balance_quantity','-balance_quantity',
-        'year_published','-year_published'
-    }
-    if order not in allowed_orders:
-        return _bad_request(f'order must be one of {sorted(allowed_orders)}')
-    qs = qs.order_by(order)
-
-    # пагинация
-    try:
-        limit = int(request.query_params.get('limit', request.parser_context['view'].paginator.default_limit or 100))
-        limit = max(1, min(limit, 500))
-    except Exception:
-        return _bad_request('limit must be integer')
-    try:
-        offset = int(request.query_params.get('offset', 0))
-        offset = max(0, offset)
-    except Exception:
-        return _bad_request('offset must be integer')
-
-    total = qs.count()
-    agg = qs.aggregate(total_quantity=Sum('quantity'), total_balance=Sum('balance_quantity'))
-    items = list(qs[offset:offset+limit])
-
-    next_offset = offset + limit if offset + limit < total else None
-    prev_offset = offset - limit if offset > 0 else None
-
-    data = {
-        'school': {
-            'username': user.username,
-            'bin': user.first_name,
-            'email': user.email,
-        },
-        'meta': {
-            'total': total,
-            'limit': limit,
-            'offset': offset,
-            'order': order,
-            'next': f'?limit={limit}&offset={next_offset}&order={order}' if next_offset is not None else None,
-            'prev': f'?limit={limit}&offset={max(prev_offset,0)}&order={order}' if prev_offset is not None else None,
-        },
-        'totals': {
-            'quantity': agg['total_quantity'] or 0,
-            'balance_quantity': agg['total_balance'] or 0,
-        },
-        'books': [
-            {
-                'id': b.id,
-                'ISBN': b.ISBN,
-                'name': b.name,
-                'author': b.author,
-                'bbk': b.bbk,
-                'quantity': b.quantity,
-                'balance_quantity': b.balance_quantity,
-                'year_published': b.year_published,
-            } for b in items
         ]
     }
     return Response(data)
