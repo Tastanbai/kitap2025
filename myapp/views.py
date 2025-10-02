@@ -15,7 +15,11 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
 from django.db import models
-
+from .utils import create_books_from_excel
+from django.core.files.storage import FileSystemStorage
+import pandas as pd
+from django.http import JsonResponse
+from django.db import connection
 
 
 def user_login(request):
@@ -52,17 +56,13 @@ def view_returned_books(request):
 def index(request):
     if not request.user.is_authenticated:
         return redirect('myapp:login')
-    sort = request.GET.get('sort', 'name')  # Устанавливаем 'name' как значение по умолчанию для сортировки
-    search_query = request.GET.get('q', '')  # Получаем поисковый запрос
-
-    # Получаем все книги
-    #books = Book.objects.all()
+    sort = request.GET.get('sort', 'name')  
+    search_query = request.GET.get('q', '')  
     books = Book.objects.filter(user=request.user)
 
     total_quantity = books.aggregate(total_quantity=models.Sum('quantity'))['total_quantity'] or 0
     total_balance = books.aggregate(total_balance=models.Sum('balance_quantity'))['total_balance'] or 0
 
-    # Фильтруем книги по поисковому запросу, если он предоставлен
     if search_query:
         books = books.filter(
             Q(name__icontains=search_query) | 
@@ -70,8 +70,6 @@ def index(request):
             Q(ISBN__icontains=search_query) |
             Q(author__icontains=search_query)
         )
-
-    # Применяем сортировку
     if sort in ['name', 'quantity', 'balance_quantity', 'bbk' ]:
         books = books.order_by(sort)
 
@@ -81,15 +79,15 @@ def index(request):
                                                 'total_balance': total_balance})
 
 
-@login_required  # Убедитесь, что только аутентифицированные пользователи могут добавлять книги
+@login_required  
 def add_book(request):
     if request.method == 'POST':
         form = BookForm(request.POST)
         if form.is_valid():
-            book = form.save(commit=False)  # Сохраняем модель, но пока не коммитим в базу данных
-            book.user = request.user  # Присваиваем книге пользователя, который ее добавляет
-            book.save()  # Теперь коммитим в базу данных
-            return redirect(reverse('myapp:index'))  # Перенаправление на главную страницу после добавления книги
+            book = form.save(commit=False)  
+            book.user = request.user  
+            book.save()  
+            return redirect(reverse('myapp:index'))  
         else:
             context = {
                 'form': form
@@ -102,20 +100,16 @@ def add_book(request):
         }
         return render(request, 'myapp/add_book.html', context=context)
 
+
 def select_all_books(request):
     if request.method == 'GET':
-        # Получаем все книги из базы данных
         all_books = Book.objects.all()
-        
-        # Создаем список идентификаторов всех книг
         selected_books_ids = [str(book.pk) for book in all_books]
-
-        # Возвращаем список идентификаторов в формате JSON
         return JsonResponse({'selected_books_ids': selected_books_ids})
     else:
-        # Если запрос не GET, возвращаем ошибку
         return HttpResponse(status=400)
     
+
 def edit_book(request, id):
     book_obj = get_object_or_404(Book, pk=id)
     ret = {'status': None, 'message': None}
@@ -145,47 +139,6 @@ def delete_books(request):
     return HttpResponseRedirect(reverse('myapp:index'))
 
 
-
-# def reg(request):
-#     if request.method == 'POST':
-#         form = RegForm(request.POST)
-#         if form.is_valid():
-#             name = request.POST.get('name')
-#             pwd = request.POST.get('pwd')
-#             r_pwd = request.POST.get('r_pwd')
-#             email = request.POST.get('email')
-
-#             # Добавляем проверку на совпадение введенных паролей
-#             if pwd == r_pwd:
-#                 user = User.objects.create_user(
-#                     username=name,
-#                     password=pwd,
-#                     email=email,
-#                 )
-#                 # Автоматический вход после регистрации
-#                 user.backend = 'django.contrib.auth.backends.ModelBackend'
-#                 auth_login(request, user)
-#                 return redirect('myapp:index')  # Перенаправление на главную страницу после регистрации
-#             else:
-#                 # Если пароли не совпадают, добавляем ошибку к форме
-#                 form.add_error('r_pwd', 'Пароли не совпадают.')
-
-#         errors = form.errors.get('__all__')
-
-#         context = {
-#             'form': form,
-#             'errors': errors
-#         }
-
-#         return render(request, 'myapp/reg.html', context=context)
-
-#     form = RegForm()
-#     context = {
-#         'form': form
-#     }
-
-#     return render(request, 'myapp/reg.html', context=context)
-
 def reg(request):
     if request.method == 'POST':
         form = RegForm(request.POST)
@@ -196,18 +149,16 @@ def reg(request):
             r_pwd = request.POST.get('r_pwd')
             email = request.POST.get('email')
 
-            # Проверяем совпадение паролей
             if pwd == r_pwd:
                 user = User.objects.create_user(
                     username=name,
-                    first_name=lastname,  # Сохраняем фамилию в поле first_name
+                    first_name=lastname,  
                     password=pwd,
                     email=email,
                 )
-                # Автоматический вход после регистрации
                 user.backend = 'django.contrib.auth.backends.ModelBackend'
                 auth_login(request, user)
-                return redirect('myapp:index')  # Перенаправление на главную страницу после регистрации
+                return redirect('myapp:index') 
             else:
                 form.add_error('r_pwd', 'Пароли не совпадают.')
 
@@ -218,52 +169,11 @@ def reg(request):
     context = {'form': form}
     return render(request, 'myapp/reg.html', context=context)
 
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         if form.is_valid():
-#             publish_instance = form.save(commit=False)
-#             publish_instance.user = request.user
-
-#             # Проверяем наличие книги перед сохранением
-#             if publish_instance.book.balance_quantity < form.cleaned_data['quantity']:
-#                 form.add_error('quantity', f"Только {publish_instance.book.balance_quantity} книг доступно.")
-#                 return render(request, 'myapp/add_publish.html', {'form': form})
-
-#             publish_instance.save()
-
-#             # Отправляем уведомление на email, указанный в форме
-#             recipient_email = form.cleaned_data['email']  # Убедитесь, что поле email корректно настроено в форме
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книгу '{publish_instance.book.name}' на дату {publish_instance.date_out}. Возврат до {publish_instance.date_in}.",
-#                 'kitaphana@oqz.kz',  # Измените на ваш активный email
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-
-#         return render(request, 'myapp/add_publish.html', {'form': form})
-    
-#     else:
-#         form = PublishForm()
-#         form.fields['book'].queryset = user_books
-#         return render(request, 'myapp/add_publish.html', {'form': form})
-
-
 
 @login_required
 def return_book(request, publish_id):
-    
-    # Получаем объект Publish, или возвращаем 404, если он не найден
     publish = get_object_or_404(Publish, id=publish_id, user=request.user)
-
     if request.method == 'POST':
-        # Создаем запись в ReturnedBook с сохранением полной информации из Publish
         ReturnedBook.objects.create(
             user=request.user,
             name=publish.name,
@@ -276,8 +186,6 @@ def return_book(request, publish_id):
             book_name=publish.book.name,
             quantity=publish.quantity,
         )
-
-        # Отправка уведомления на email, если у записи есть email
         if publish.email:
             send_mail(
                 'Возврат книги подтвержден',
@@ -286,13 +194,10 @@ def return_book(request, publish_id):
                 [publish.email],
                 fail_silently=False,
             )
-
-        # Удаляем объект Publish после успешного сохранения в ReturnedBook
         publish.delete()
         messages.success(request, 'Книга успешно возвращена и сохранена для учёта.')
         return redirect('myapp:rent_book')
     else:
-        # Если метод запроса не POST, выводим сообщение об ошибке
         messages.error(request, 'Действие доступно только через POST запрос.')
         return redirect('myapp:rent_book')
 
@@ -369,21 +274,6 @@ def send_email(request):
     return redirect('myapp:blacklist')
 
 
-from .utils import create_books_from_excel
-
-
-# @login_required
-# def excel(request):
-#     if request.method == 'POST':
-#         if 'file' in request.FILES:
-#             file = request.FILES['file']
-#             create_books_from_excel(file, request.user)
-#             return render(request, 'myapp/excel.html', {'message': 'Excel файл успешно загружен и обработан'})
-#         else:
-#             return render(request, 'myapp/excel.html', {'error': 'Файл не найден. Пожалуйста, загрузите файл.'})
-#     return render(request, 'myapp/excel.html')
-
-
 @login_required
 def excel(request):
     if request.method == 'POST':
@@ -398,166 +288,6 @@ def excel(request):
             return render(request, 'myapp/excel.html', {'error': 'Файл не найден. Пожалуйста, загрузите файл.'})
     return render(request, 'myapp/excel.html')
 
-
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         if form.is_valid():
-#             publish_instances = []
-#             for book_data in request.POST.getlist('book'):
-#                 quantity = request.POST.getlist('quantity')[request.POST.getlist('book').index(book_data)]
-#                 book_instance = get_object_or_404(Book, pk=book_data)
-                
-#                 if book_instance.balance_quantity < int(quantity):
-#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно.")
-#                     return render(request, 'myapp/add_publish.html', {'form': form})
-
-#                 publish_instance = Publish(
-#                     user=request.user,
-#                     name=form.cleaned_data['name'],
-#                     iin=form.cleaned_data['iin'],
-#                     date_out=form.cleaned_data['date_out'],
-#                     date_in=form.cleaned_data['date_in'],
-#                     city=form.cleaned_data['city'],
-#                     email=form.cleaned_data['email'],
-#                     phone=form.cleaned_data['phone'],
-#                     book=book_instance,
-#                     quantity=quantity
-#                 )
-#                 publish_instances.append(publish_instance)
-#                 book_instance.balance_quantity -= int(quantity)
-#                 book_instance.save()
-
-#             Publish.objects.bulk_create(publish_instances)
-
-#             recipient_email = form.cleaned_data['email']
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
-#                 'kitaphana@oqz.kz',
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-
-#         return render(request, 'myapp/add_publish.html', {'form': form})
-    
-#     else:
-#         form = PublishForm()
-#         form.fields['book'].queryset = user_books
-# #         return render(request, 'myapp/add_publish.html', {'form': form})
-
-
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         if form.is_valid():
-#             books_data = request.POST.getlist('book')
-#             quantities = request.POST.getlist('quantity')
-#             errors = False
-
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-                
-#                 if book_instance.balance_quantity < int(quantity):
-#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-#                     errors = True
-
-#             if errors:
-#                 return render(request, 'myapp/add_publish.html', {'form': form})
-
-#             publish_instances = []
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-
-#                 publish_instance = Publish(
-#                     user=request.user,
-#                     name=form.cleaned_data['name'],
-#                     iin=form.cleaned_data['iin'],
-#                     date_out=form.cleaned_data['date_out'],
-#                     date_in=form.cleaned_data['date_in'],
-#                     city=form.cleaned_data['city'],
-#                     email=form.cleaned_data['email'],
-#                     phone=form.cleaned_data['phone'],
-#                     book=book_instance,
-#                     quantity=quantity
-#                 )
-#                 publish_instances.append(publish_instance)
-#                 book_instance.balance_quantity -= int(quantity)
-#                 book_instance.save()
-
-#             Publish.objects.bulk_create(publish_instances)
-
-#             recipient_email = form.cleaned_data['email']
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
-#                 'kitaphana@oqz.kz',
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-
-#         return render(request, 'myapp/add_publish.html', {'form': form})
-    
-#     else:
-#         form = PublishForm()
-#         form.fields['book'].queryset = user_books
-#         return render(request, 'myapp/add_publish.html', {'form': form})
-
-# from django.shortcuts import render
-# from django.core.files.storage import FileSystemStorage
-# import pandas as pd
-
-# def excel_user(request):
-#     if request.method == 'POST' and request.FILES['file']:
-#         file = request.FILES['file']
-#         fs = FileSystemStorage()
-#         filename = fs.save(file.name, file)
-#         file_path = fs.path(filename)
-
-#         # Чтение Excel файла с помощью pandas
-#         try:
-#             df = pd.read_excel(file_path)
-#             # Проверка наличия столбца 'ФИО'
-#             if 'ФИО' in df.columns:
-#                 fio_list = df['ФИО'].tolist()
-#                 # Обработка списка ФИО
-#                 # Например, сохранение в базу данных или другая обработка
-#                 # ...
-#                 message = "Файл успешно загружен и обработан."
-#             else:
-#                 error = "В загруженном файле отсутствует столбец 'ФИО'."
-#         except Exception as e:
-#             error = f"Произошла ошибка при обработке файла: {str(e)}"
-
-#         # Удаление файла после обработки
-#         fs.delete(filename)
-
-#         if 'message' in locals():
-#             return render(request, 'myapp/excel_user.html', {'message': message})
-#         else:
-#             return render(request, 'myapp/excel_user.html', {'error': error})
-
-#     return render(request, 'myapp/excel_user.html')
-
-#---------------------------------------------------------------------------------------------------------------------------------------------
-from django.shortcuts import render, redirect, get_object_or_404
-from django.core.files.storage import FileSystemStorage
-import pandas as pd
-from myapp.models import Book, Publish
-from myapp.forms import PublishForm
-from django.contrib.auth.decorators import login_required
 
 def excel_user(request):
     if request.method == 'POST' and request.FILES['file']:
@@ -586,340 +316,7 @@ def excel_user(request):
 
     return render(request, 'myapp/excel_user.html')
 
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-#     fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
 
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         if form.is_valid():
-#             books_data = request.POST.getlist('book')
-#             quantities = request.POST.getlist('quantity')
-#             errors = False
-
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-                
-#                 if book_instance.balance_quantity < int(quantity):
-#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-#                     errors = True
-
-#             if errors:
-#                 return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-
-#             publish_instances = []
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-
-#                 publish_instance = Publish(
-#                     user=request.user,
-#                     name=form.cleaned_data['name'],
-#                     iin=form.cleaned_data['iin'],
-#                     date_out=form.cleaned_data['date_out'],
-#                     date_in=form.cleaned_data['date_in'],
-#                     city=form.cleaned_data['city'],
-#                     email=form.cleaned_data['email'],
-#                     phone=form.cleaned_data['phone'],
-#                     book=book_instance,
-#                     quantity=quantity
-#                 )
-#                 publish_instances.append(publish_instance)
-#                 book_instance.balance_quantity -= int(quantity)
-#                 book_instance.save()
-
-#             Publish.objects.bulk_create(publish_instances)
-
-#             recipient_email = form.cleaned_data['email']
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"Уважаемый {form.cleaned_data['name']}, вы успешно арендовали книги.",
-#                 'kitaphana@oqz.kz',
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-
-#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-
-#     else:
-#         form = PublishForm()
-#         form.fields['book'].queryset = user_books
-#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-
-#---------------------------------------------------------------------------------------------------------------------------------------------
-
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-#     fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
-
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         if form.is_valid():
-#             books_data = request.POST.getlist('book')
-#             quantities = request.POST.getlist('quantity')
-#             name = form.cleaned_data['name']
-#             errors = False
-
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-                
-#                 if book_instance.balance_quantity < int(quantity):
-#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-#                     errors = True
-
-#             if errors:
-#                 return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-
-#             publish_instances = []
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-
-#                 publish_instance = Publish(
-#                     user=request.user,
-#                     name=name,  # Используйте новое или выбранное ФИО
-#                     iin=form.cleaned_data['iin'],
-#                     date_out=form.cleaned_data['date_out'],
-#                     date_in=form.cleaned_data['date_in'],
-#                     city=form.cleaned_data['city'],
-#                     email=form.cleaned_data['email'],
-#                     phone=form.cleaned_data['phone'],
-#                     book=book_instance,
-#                     quantity=quantity
-#                 )
-#                 publish_instances.append(publish_instance)
-#                 book_instance.balance_quantity -= int(quantity)
-#                 book_instance.save()
-
-#             Publish.objects.bulk_create(publish_instances)
-
-#             recipient_email = form.cleaned_data['email']
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"Уважаемый {name}, вы успешно арендовали книги.",
-#                 'kitaphana@oqz.kz',
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-
-#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-#     else:
-#         form = PublishForm()
-#         form.fields['book'].queryset = user_books
-#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-
-# from django.db import connection
-
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-#     fio_list = request.session.get('fio_list', [])  # Получить список ФИО из сессии
-
-#     # Получение последнего ИИН из базы данных
-#     last_iin = None
-#     with connection.cursor() as cursor:
-#         cursor.execute("SELECT card FROM School WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;")
-#         row = cursor.fetchone()
-#         if row:
-#             last_iin = row[0]
-
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         if form.is_valid():
-#             books_data = request.POST.getlist('book')
-#             quantities = request.POST.getlist('quantity')
-#             name = form.cleaned_data['name']
-#             errors = False
-
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-                
-#                 if book_instance.balance_quantity < int(quantity):
-#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-#                     errors = True
-
-#             if errors:
-#                 return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-
-#             publish_instances = []
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-
-#                 publish_instance = Publish(
-#                     user=request.user,
-#                     name=name,  # Используйте новое или выбранное ФИО
-#                     iin=form.cleaned_data['iin'],
-#                     date_out=form.cleaned_data['date_out'],
-#                     date_in=form.cleaned_data['date_in'],
-#                     city=form.cleaned_data['city'],
-#                     email=form.cleaned_data['email'],
-#                     phone=form.cleaned_data['phone'],
-#                     book=book_instance,
-#                     quantity=quantity
-#                 )
-#                 publish_instances.append(publish_instance)
-#                 book_instance.balance_quantity -= int(quantity)
-#                 book_instance.save()
-
-#             Publish.objects.bulk_create(publish_instances)
-
-#             recipient_email = form.cleaned_data['email']
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"Уважаемый {name}, вы успешно арендовали книги.",
-#                 'kitaphana@oqz.kz',
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-
-#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-#     else:
-#         form = PublishForm(initial={'iin': last_iin})  # Предустановить ИИН
-#         form.fields['book'].queryset = user_books
-#         return render(request, 'myapp/add_publish.html', {'form': form, 'fio_list': fio_list})
-# f
-
-# from django.db import connection
-# from django.shortcuts import render, redirect, get_object_or_404
-# from django.contrib.auth.decorators import login_required
-# from django.urls import reverse
-# from django.core.mail import send_mail
-# from django.contrib import messages
-# from .forms import PublishForm
-# from .models import Book, Publish
-
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-    
-#     # Определяем текущую школу
-#     current_school = request.user.first_name
-#     school_table = f"{current_school}"
-
-#     # Получение последнего card и a1 из таблицы школы
-#     last_card = None
-#     last_a1 = None
-#     try:
-#         with connection.cursor() as cursor:
-#             query = f"SELECT card, a1 FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
-#             cursor.execute(query)
-#             row = cursor.fetchone()
-#             if row:
-#                 last_card = row[0]  # card
-#                 last_a1 = row[1]    # a1
-#     except Exception as e:
-#         print(f"Ошибка доступа к таблице {school_table}: {e}")
-
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         # Проверка ISBN
-#         isbn = request.POST.get('ISBN')
-#         if isbn:
-#             existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
-#             if existing_book:
-#                 messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
-#                 # Предзаполняем форму найденной книгой
-#                 form = PublishForm(request.POST, initial={'book': [existing_book.id]})
-#                 form.fields['book'].queryset = user_books
-#             else:
-#                 messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
-#                 return render(request, 'myapp/add_publish.html', {'form': form})
-
-#         if form.is_valid():
-#             books_data = request.POST.getlist('book')
-#             quantities = request.POST.getlist('quantity')
-#             name = form.cleaned_data['name']
-#             errors = False
-
-#             # Проверка доступного количества книг
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-#                 if book_instance.balance_quantity < int(quantity):
-#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-#                     errors = True
-
-#             if errors:
-#                 return render(request, 'myapp/add_publish.html', {'form': form})
-
-#             # Создание записей публикации
-#             publish_instances = []
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-
-#                 publish_instance = Publish(
-#                     user=request.user,
-#                     name=name,
-#                     iin=form.cleaned_data['iin'],
-#                     date_out=form.cleaned_data['date_out'],
-#                     date_in=form.cleaned_data['date_in'],
-#                     city=form.cleaned_data['city'],
-#                     email=form.cleaned_data['email'],
-#                     phone=form.cleaned_data['phone'],
-#                     book=book_instance,
-#                     quantity=quantity
-#                 )
-#                 publish_instances.append(publish_instance)
-#                 book_instance.balance_quantity -= int(quantity)
-#                 book_instance.save()
-
-#             Publish.objects.bulk_create(publish_instances)
-
-#             # Отправка email
-#             recipient_email = form.cleaned_data['email']
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"Уважаемый {name}, вы успешно арендовали книги ",
-#                 'kitaphana@oqz.kz',
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"""Уважаемый {name}, 
-
-#             Вы успешно арендовали следующие книги:
-
-#             {''.join([
-#                 f"- Книга: {book_instance.name}\n"
-#                 f"  Количество: {quantity}\n"
-#                 f"  Дата получения: {form.cleaned_data['date_out']}\n"
-#                 f"  Дата возврата: {form.cleaned_data['date_in']}\n\n"
-#                 for book_id, quantity in zip(books_data, quantities)
-#                 for book_instance in [get_object_or_404(Book, pk=book_id)]
-#             ])}
-
-#             Спасибо, что пользуетесь нашей библиотекой!
-#             """,
-#                 'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-#     else:
-#         # GET запрос - создаем новую форму с начальными данными
-#         form = PublishForm(initial={'iin': last_card, 'name': last_a1})
-#         form.fields['book'].queryset = user_books
-
-#     return render(request, 'myapp/add_publish.html', {'form': form})
-
-
-from django.http import JsonResponse
 
 def check_isbn(request):
     isbn = request.GET.get('isbn')
@@ -985,258 +382,6 @@ def edit_news(request, news_id):
 
     return render(request, 'myapp/edit_news.html', {'form': form, 'news_item': news_item})
 
-from django.db import connection
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.urls import reverse
-from django.core.mail import send_mail
-from django.contrib import messages
-from .forms import PublishForm
-from .models import Book, Publish
-
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-    
-#     # Определяем текущую школу
-#     current_school = request.user.first_name
-#     school_table = f"{current_school}"
-
-# from django.db import connection
-# from django.shortcuts import render, redirect, get_object_or_404
-# from django.contrib.auth.decorators import login_required
-# from django.urls import reverse
-# from django.core.mail import send_mail
-# from django.contrib import messages
-# from .forms import PublishForm
-# from .models import Book, Publish
-
-# @login_required
-# def add_publish(request):
-#     user_books = Book.objects.filter(user=request.user)
-    
-#     # Определяем текущую школу
-#     current_school = request.user.first_name
-#     school_table = f"{current_school}"
-
-#     # Получение последнего card, a1 и data из таблицы школы
-#     last_card = None
-#     last_a1 = None
-#     last_data = None
-#     try:
-#         with connection.cursor() as cursor:
-#             query = f"SELECT card, a1, data FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
-#             cursor.execute(query)
-#             row = cursor.fetchone()
-#             if row:
-#                 last_card = row[0]  # card
-#                 last_a1 = row[1]    # a1
-#                 last_data = row[2]  # data
-#                 if last_data:
-#                     last_data = last_data.split('T')[0]  # Взять часть до 'T'
-#                     last_data = '-'.join(reversed(last_data.split('.')))  # Преобразовать в формат дд.мм.гггг
-#                     print(f"Значение last_data: {last_data}")  
-#     except Exception as e: 
-#         print(f"Ошибка доступа к таблице {school_table}: {e}")
-
-#     if request.method == 'POST':
-#         form = PublishForm(request.POST)
-#         form.fields['book'].queryset = user_books
-
-#         # Проверка ISBN
-#         isbn = request.POST.get('ISBN')
-#         if isbn:
-#             existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
-#             if existing_book:
-#                 messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
-#                 # Предзаполняем форму найденной книгой
-#                 form = PublishForm(request.POST, initial={'book': [existing_book.id]})
-#                 form.fields['book'].queryset = user_books
-#             else:
-#                 messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
-#                 return render(request, 'myapp/add_publish.html', {'form': form})
-
-#         if form.is_valid():
-#             books_data = request.POST.getlist('book')
-#             quantities = request.POST.getlist('quantity')
-#             name = form.cleaned_data['name']
-#             errors = False
-
-#             # Проверка доступного количества книг
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-#                 if book_instance.balance_quantity < int(quantity):
-#                     form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-#                     errors = True
-
-#             if errors:
-#                 return render(request, 'myapp/add_publish.html', {'form': form})
-
-#             # Создание записей публикации
-#             publish_instances = []
-#             for book_id, quantity in zip(books_data, quantities):
-#                 book_instance = get_object_or_404(Book, pk=book_id)
-
-#                 publish_instance = Publish(
-#                     user=request.user,
-#                     name=name,
-#                     iin=form.cleaned_data['iin'],
-#                     date_out=form.cleaned_data['date_out'] or last_data,
-#                     date_in=form.cleaned_data['date_in'],
-#                     city=form.cleaned_data['city'],
-#                     email=form.cleaned_data['email'],
-#                     phone=form.cleaned_data['phone'],
-#                     book=book_instance,
-#                     quantity=quantity
-#                 )
-#                 publish_instances.append(publish_instance)
-#                 book_instance.balance_quantity -= int(quantity)
-#                 book_instance.save()
-
-#             Publish.objects.bulk_create(publish_instances)
-
-#             # Отправка email
-#             recipient_email = form.cleaned_data['email']
-#             send_mail(
-#                 'Подтверждение аренды книги',
-#                 f"""Уважаемый {name},
-
-#             Вы успешно арендовали следующие книги:
-
-#             - Книга: {book_instance.name}
-#             Количество: {quantity}
-#             Дата получения: {form.cleaned_data['date_out'] or last_data}
-#             Дата возврата: {form.cleaned_data['date_in']}
-
-#             Спасибо, что пользуетесь нашей библиотекой!
-#             """,
-#                 'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
-#                 [recipient_email],
-#                 fail_silently=False,
-#             )
-
-#             return redirect(reverse('myapp:rent_book'))
-#     else:
-#         # GET запрос - создаем новую форму с начальными данными
-#         form = PublishForm(initial={'iin': last_card, 
-#                                     'name': last_a1, 
-#                                     'date_out': last_data or date.today().strftime('%Y-%m-%d')
-#                                     })
-#         form.fields['book'].queryset = user_books
-
-#         print(f"Инициализация формы: {form.initial}")
-
-#     return render(request, 'myapp/add_publish.html', {'form': form})
-
-
-    # # Получение последнего card, a1 и data из таблицы школы
-    # last_card = None
-    # last_a1 = None
-    # last_data = None
-    # try:
-    #     with connection.cursor() as cursor:
-    #         query = f"SELECT card, a1, data FROM {school_table} WHERE card IS NOT NULL ORDER BY id DESC LIMIT 1;"
-    #         cursor.execute(query)
-    #         row = cursor.fetchone()
-    #         if row:
-    #             last_card = row[0]  # card
-    #             last_a1 = row[1]    # a1
-    #             last_data = row[2]  # data
-    #             if last_data:
-    #                 last_data = last_data.split('T')[0]  # Взять часть до 'T'
-    #                 last_data = '-'.join(reversed(last_data.split('.')))  # Преобразовать в формат дд.мм.гггг
-    #                 print(f"Значение last_data: {last_data}")  
-    # except Exception as e: 
-    #     print(f"Ошибка доступа к таблице {school_table}: {e}")
-
-    # if request.method == 'POST':
-    #     form = PublishForm(request.POST)
-    #     form.fields['book'].queryset = user_books
-
-    #     # Проверка ISBN
-    #     isbn = request.POST.get('ISBN')
-    #     if isbn:
-    #         existing_book = Book.objects.filter(user=request.user, ISBN=isbn).first()
-    #         if existing_book:
-    #             messages.info(request, f"Книга с ISBN {isbn} найдена: {existing_book.name}")
-    #             # Предзаполняем форму найденной книгой
-    #             form = PublishForm(request.POST, initial={'book': [existing_book.id]})
-    #             form.fields['book'].queryset = user_books
-    #         else:
-    #             messages.error(request, f"Книга с ISBN {isbn} не найдена в вашей библиотеке.")
-    #             return render(request, 'myapp/add_publish.html', {'form': form})
-
-    #     if form.is_valid():
-    #         books_data = request.POST.getlist('book')
-    #         quantities = request.POST.getlist('quantity')
-    #         name = form.cleaned_data['name']
-    #         errors = False
-
-    #         # Проверка доступного количества книг
-    #         for book_id, quantity in zip(books_data, quantities):
-    #             book_instance = get_object_or_404(Book, pk=book_id)
-    #             if book_instance.balance_quantity < int(quantity):
-    #                 form.add_error('quantity', f"Только {book_instance.balance_quantity} книг доступно для книги '{book_instance.name}'.")
-    #                 errors = True
-
-    #         if errors:
-    #             return render(request, 'myapp/add_publish.html', {'form': form})
-
-    #         # Создание записей публикации
-    #         publish_instances = []
-    #         for book_id, quantity in zip(books_data, quantities):
-    #             book_instance = get_object_or_404(Book, pk=book_id)
-
-    #             publish_instance = Publish(
-    #                 user=request.user,
-    #                 name=name,
-    #                 iin=form.cleaned_data['iin'],
-    #                 date_out=form.cleaned_data['date_out'] or last_data,
-    #                 date_in=form.cleaned_data['date_in'],
-    #                 city=form.cleaned_data['city'],
-    #                 email=form.cleaned_data['email'],
-    #                 phone=form.cleaned_data['phone'],
-    #                 book=book_instance,
-    #                 quantity=quantity
-    #             )
-    #             publish_instances.append(publish_instance)
-    #             book_instance.balance_quantity -= int(quantity)
-    #             book_instance.save()
-
-    #         Publish.objects.bulk_create(publish_instances)
-
-    #         # Отправка email
-    #         recipient_email = form.cleaned_data['email']
-    #         send_mail(
-    #             'Подтверждение аренды книги',
-    #             f"""Уважаемый {name},
-
-    #         Вы успешно арендовали следующие книги:
-
-    #         - Книга: {book_instance.name}
-    #         Количество: {quantity}
-    #         Дата получения: {form.cleaned_data['date_out'] or last_data}
-    #         Дата возврата: {form.cleaned_data['date_in']}
-
-    #         Спасибо, что пользуетесь нашей библиотекой!
-    #         """,
-    #             'kitaphana@oqz.kz',  # Измените на ваш реальный адрес отправителя
-    #             [recipient_email],
-    #             fail_silently=False,
-    #         )
-
-    #         return redirect(reverse('myapp:rent_book'))
-    # else:
-    #     # GET запрос - создаем новую форму с начальными данными
-    #     form = PublishForm(initial={'iin': last_card, 
-    #                                 'name': last_a1, 
-    #                                 'date_out': last_data or date.today().strftime('%Y-%m-%d')
-    #                                 })
-    #     form.fields['book'].queryset = user_books
-
-    #     print(f"Инициализация формы: {form.initial}")
-
-    # return render(request, 'myapp/add_publish.html', {'form': form})
 
 
 @login_required
@@ -1355,162 +500,6 @@ def add_publish(request):
     return render(request, 'myapp/add_publish.html', {'form': form})
 
 
-
-# from django.shortcuts import render
-# from django.http import HttpResponse
-# import barcode
-# from barcode.writer import ImageWriter
-# import random
-# import os
-# import shutil
-# import zipfile
-# import time
-# from io import BytesIO
-# from django.conf import settings
-# from PIL import Image
-
-# # Абсолютный путь к папке штрих-кодов
-# BARCODE_FOLDER = os.path.abspath(os.path.join(settings.BASE_DIR, "static", "barcodes"))
-
-# def generate_and_download_barcodes(request):
-#     if request.method == "POST":
-#         count = int(request.POST.get("count", 1))
-
-#         # Очищаем папку перед созданием новых штрих-кодов
-#         if os.path.exists(BARCODE_FOLDER):
-#             shutil.rmtree(BARCODE_FOLDER)
-#         os.makedirs(BARCODE_FOLDER, exist_ok=True)
-
-#         barcode_files = []
-
-#         for i in range(count):
-#             random_number = ''.join(str(random.randint(0, 9)) for _ in range(12))
-#             ean = barcode.get('ean13', random_number, writer=ImageWriter())
-
-#             # Сохраняем штрих-код и получаем имя файла (расширение добавляется автоматически)
-#             saved_filename = ean.save(os.path.join(BARCODE_FOLDER, f"штрих-код_{i+1}"))
-#             filepath = os.path.abspath(saved_filename)
-
-#             # Ждем, чтобы файл успел записаться
-#             time.sleep(1)
-
-#             if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
-#                 try:
-#                     with Image.open(filepath) as img:
-#                         img.verify()
-#                     print(f"✅ Файл успешно создан: {filepath} (размер: {os.path.getsize(filepath)} байт)")
-#                     barcode_files.append(filepath)
-#                 except Exception as e:
-#                     print(f"❌ Ошибка: Файл повреждён ({filepath}): {e}")
-#             else:
-#                 print(f"❌ Ошибка: Файл пустой или не записался: {filepath}")
-
-#         if not barcode_files:
-#             return HttpResponse("❌ Ошибка: Ни один файл не записался корректно!", status=500)
-
-#         # Создаем ZIP-архив
-#         zip_buffer = BytesIO()
-#         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-#             for file_path in barcode_files:
-#                 zipf.write(file_path, os.path.basename(file_path))
-#                 print(f"📦 Добавлено в ZIP: {file_path}")
-
-#         zip_buffer.seek(0)
-
-#         # После создания архива удаляем старые файлы
-#         shutil.rmtree(BARCODE_FOLDER)
-#         print(f"🗑️ Папка {BARCODE_FOLDER} удалена.")
-
-#         response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
-#         response["Content-Disposition"] = 'attachment; filename="штрих-код.zip"'
-#         return response
-
-#     return render(request, "myapp/barcode.html")
-
-
-# from django.shortcuts import render
-# from django.http import HttpResponse
-# import barcode
-# from barcode.writer import ImageWriter
-# import random
-# import os
-# import shutil
-# import zipfile
-# import time
-# from io import BytesIO
-# from django.conf import settings
-# from PIL import Image
-
-# # Абсолютный путь к папке для штрих‑кодов
-# BARCODE_FOLDER = os.path.abspath(os.path.join(settings.BASE_DIR, "static", "barcodes"))
-
-# def generate_and_download_copies(request):
-#     """
-#     Генерирует один штрих‑код (EAN-13) и затем создает указанное число копий этого штрих‑кода.
-#     После упаковки копий в ZIP‑архив исходная папка удаляется.
-#     """
-#     if request.method == "POST":
-#         copies_count = int(request.POST.get("copies_count", 1))
-        
-#         # Очищаем папку перед созданием новых штрих‑кодов
-#         if os.path.exists(BARCODE_FOLDER):
-#             shutil.rmtree(BARCODE_FOLDER)
-#         os.makedirs(BARCODE_FOLDER, exist_ok=True)
-        
-#         # Генерируем один базовый штрих‑код
-#         random_number = ''.join(str(random.randint(0, 9)) for _ in range(12))
-#         ean = barcode.get('ean13', random_number, writer=ImageWriter())
-#         # Сохраняем базовый штрих‑код без добавления расширения вручную (ean.save добавит его сам)
-#         saved_filename = ean.save(os.path.join(BARCODE_FOLDER, "barcode"))
-#         base_filepath = os.path.abspath(saved_filename)
-        
-#         # Дадим время на запись файла
-#         time.sleep(1)
-        
-#         # Проверяем, что базовый файл записался
-#         if not (os.path.exists(base_filepath) and os.path.getsize(base_filepath) > 0):
-#             return HttpResponse("❌ Ошибка: Базовый штрих‑код не записался корректно!", status=500)
-#         try:
-#             with Image.open(base_filepath) as img:
-#                 img.verify()
-#             print(f"✅ Базовый штрих‑код успешно создан: {base_filepath} (размер: {os.path.getsize(base_filepath)} байт)")
-#         except Exception as e:
-#             return HttpResponse(f"❌ Ошибка: Базовый штрих‑код повреждён: {e}", status=500)
-        
-#         # Создаем копии базового штрих‑кода
-#         barcode_files = []
-#         for i in range(copies_count):
-#             copy_filename = f"barcode_copy_{i+1}.png"
-#             copy_filepath = os.path.join(BARCODE_FOLDER, copy_filename)
-#             # Просто копируем базовый файл
-#             shutil.copy(base_filepath, copy_filepath)
-#             time.sleep(0.5)
-#             if os.path.exists(copy_filepath) and os.path.getsize(copy_filepath) > 0:
-#                 barcode_files.append(copy_filepath)
-#                 print(f"✅ Копия создана: {copy_filepath} (размер: {os.path.getsize(copy_filepath)} байт)")
-#             else:
-#                 print(f"❌ Ошибка: Не удалось создать копию: {copy_filepath}")
-        
-#         if not barcode_files:
-#             return HttpResponse("❌ Ошибка: Ни одна копия не создана корректно!", status=500)
-        
-#         # Создаем ZIP‑архив с копиями
-#         zip_buffer = BytesIO()
-#         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
-#             for file_path in barcode_files:
-#                 zipf.write(file_path, os.path.basename(file_path))
-#                 print(f"📦 Добавлено в ZIP: {file_path}")
-#         zip_buffer.seek(0)
-        
-#         # Удаляем исходную папку с штрих‑кодами
-#         shutil.rmtree(BARCODE_FOLDER)
-#         print(f"🗑️ Папка {BARCODE_FOLDER} удалена.")
-        
-#         response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
-#         response["Content-Disposition"] = 'attachment; filename="barcode_copies.zip"'
-#         return response
-
-#     return render(request, "myapp/barcode.html")
 from django.shortcuts import render
 from django.http import HttpResponse
 import barcode
@@ -1522,7 +511,6 @@ import zipfile
 def generate_and_download_barcodes(request):
     if request.method == "POST":
         count = int(request.POST.get("count", 1))
-        # Ограничение убрано – теперь количество штрих-кодов определяется значением count
         
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
@@ -1547,76 +535,78 @@ def generate_and_download_barcodes(request):
     return render(request, "myapp/barcode.html")
 
 
-
+# views_api.py
 import base64
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from django.contrib.auth import authenticate
 from django.utils.dateparse import parse_date
-from .models import Publish
+from django.db.models import Sum, Q
 
-def _basic_auth_user(request):
-    auth = request.META.get('HTTP_AUTHORIZATION', '')
-    if not auth.startswith('Basic '):
-        return None
-    try:
-        decoded = base64.b64decode(auth.split(' ', 1)[1]).decode('utf-8')
-        username, password = decoded.split(':', 1)
-    except Exception:
-        return None
-    return authenticate(request, username=username, password=password)
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-@require_GET
+from .models import Publish, Book
+
+# Если хочешь сохранить поддержку Basic параллельно с JWT:
+AUTH_CLASSES = [JWTAuthentication, BasicAuthentication]
+
+def _bad_request(msg):
+    return Response({'detail': msg}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@authentication_classes(AUTH_CLASSES)
+@permission_classes([IsAuthenticated])
 def api_school_borrows(request):
-    user = _basic_auth_user(request)
-    if not user:
-        resp = JsonResponse({'detail': 'Unauthorized'})
-        resp.status_code = 401
-        resp['WWW-Authenticate'] = 'Basic realm="School API"'
-        return resp
+    user = request.user
 
     qs = Publish.objects.filter(user=user).select_related('book')
 
-    # Фильтры по датам (с валидацией формата)
-    since_str = request.GET.get('since') or ''
-    until_str = request.GET.get('until') or ''
+    # даты
+    since_str = request.query_params.get('since') or ''
+    until_str = request.query_params.get('until') or ''
     since = parse_date(since_str) if since_str else None
     until = parse_date(until_str) if until_str else None
     if since_str and not since:
-        return JsonResponse({'detail': 'since must be YYYY-MM-DD'}, status=400)
+        return _bad_request('since must be YYYY-MM-DD')
     if until_str and not until:
-        return JsonResponse({'detail': 'until must be YYYY-MM-DD'}, status=400)
+        return _bad_request('until must be YYYY-MM-DD')
     if since:
         qs = qs.filter(date_out__gte=since)
     if until:
         qs = qs.filter(date_out__lte=until)
 
-    # Сортировка
-    order = request.GET.get('order') or '-date_out'
+    # сортировка
+    order = request.query_params.get('order') or '-date_out'
     allowed_orders = {'date_out', '-date_out', 'date_in', '-date_in'}
     if order not in allowed_orders:
-        return JsonResponse({'detail': f'order must be one of {sorted(allowed_orders)}'}, status=400)
+        return _bad_request(f'order must be one of {sorted(allowed_orders)}')
     qs = qs.order_by(order)
 
-    # Пагинация
+    # пагинация (LimitOffsetPagination DRF под капотом)
     try:
-        limit = min(max(int(request.GET.get('limit', 100)), 1), 500)
-        offset = max(int(request.GET.get('offset', 0)), 0)
-    except ValueError:
-        return JsonResponse({'detail': 'limit/offset must be integers'}, status=400)
+        limit = int(request.query_params.get('limit', request.parser_context['view'].paginator.default_limit or 100))
+        limit = max(1, min(limit, 500))
+    except Exception:
+        return _bad_request('limit must be integer')
+    try:
+        offset = int(request.query_params.get('offset', 0))
+        offset = max(0, offset)
+    except Exception:
+        return _bad_request('offset must be integer')
 
     total = qs.count()
     items = list(qs[offset:offset+limit])
 
-    # next/prev для удобной пагинации
     next_offset = offset + limit if offset + limit < total else None
     prev_offset = offset - limit if offset > 0 else None
 
     data = {
         'school': {
-            'username': user.username,   # например, "kemelbilim"
-            'bin': user.first_name,      # например, "200240023403"
-            'email': user.email,         # например, "kemelbilim@edu.kz"
+            'username': user.username,
+            'bin': user.first_name,
+            'email': user.email,
         },
         'meta': {
             'total': total,
@@ -1636,114 +626,78 @@ def api_school_borrows(request):
                     'isbn': p.book.ISBN,
                 },
                 'quantity': p.quantity,
-                'date_out': p.date_out,   # Django сам отдаст ISO 8601
+                'date_out': p.date_out,
                 'date_in': p.date_in,
                 'city': p.city,
                 'email': p.email,
                 'phone': p.phone,
-            }
-            for p in items
+            } for p in items
         ]
     }
+    return Response(data)
 
-    # главное улучшение: читаемая кириллица
-    return JsonResponse(data, safe=True, json_dumps_params={'ensure_ascii': False})
-
-
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from django.db.models import Sum, Q
-# _basic_auth_user уже есть у вас рядом с api_school_borrows
-from .models import Book
-
-@require_GET
+@api_view(['GET'])
+@authentication_classes(AUTH_CLASSES)
+@permission_classes([IsAuthenticated])
 def api_school_books(request):
-    """
-    JSON API: список книг для аутентифицированной школы (Basic Auth).
-    Поддерживает:
-      - q=<поиск по названию/автору/BBK/ISBN>
-      - author=<строка>
-      - isbn=<строка>
-      - bbk=<строка>
-      - year_min=<YYYY> & year_max=<YYYY>
-      - available=1  (только где balance_quantity > 0)
-      - order one of: name, -name, author, -author, bbk, -bbk, ISBN, -ISBN,
-                      quantity, -quantity, balance_quantity, -balance_quantity,
-                      year_published, -year_published
-      - limit (по умолчанию 100, максимум 500), offset (по умолчанию 0)
-    """
-    user = _basic_auth_user(request)
-    if not user:
-        resp = JsonResponse({'detail': 'Unauthorized'})
-        resp.status_code = 401
-        resp['WWW-Authenticate'] = 'Basic realm="School API"'
-        return resp
-
+    user = request.user
     qs = Book.objects.filter(user=user)
 
-    # Поиск и фильтры
-    q = request.GET.get('q') or ''
+    q = request.query_params.get('q') or ''
     if q:
-        qs = qs.filter(
-            Q(name__icontains=q) |
-            Q(author__icontains=q) |
-            Q(bbk__icontains=q) |
-            Q(ISBN__icontains=q)
-        )
+        qs = qs.filter(Q(name__icontains=q) | Q(author__icontains=q) | Q(bbk__icontains=q) | Q(ISBN__icontains=q))
 
-    author = request.GET.get('author')
-    if author:
-        qs = qs.filter(author__icontains=author)
+    author = request.query_params.get('author')
+    if author: qs = qs.filter(author__icontains=author)
 
-    isbn = request.GET.get('isbn')
-    if isbn:
-        qs = qs.filter(ISBN__icontains=isbn)
+    isbn = request.query_params.get('isbn')
+    if isbn: qs = qs.filter(ISBN__icontains=isbn)
 
-    bbk = request.GET.get('bbk')
-    if bbk:
-        qs = qs.filter(bbk__icontains=bbk)
+    bbk = request.query_params.get('bbk')
+    if bbk: qs = qs.filter(bbk__icontains=bbk)
 
-    year_min = request.GET.get('year_min')
-    year_max = request.GET.get('year_max')
-    if year_min and year_min.isdigit():
-        qs = qs.filter(year_published__gte=int(year_min))
-    if year_max and year_max.isdigit():
-        qs = qs.filter(year_published__lte=int(year_max))
+    y_min = request.query_params.get('year_min')
+    y_max = request.query_params.get('year_max')
+    if y_min and y_min.isdigit(): qs = qs.filter(year_published__gte=int(y_min))
+    if y_max and y_max.isdigit(): qs = qs.filter(year_published__lte=int(y_max))
 
-    if request.GET.get('available') in ('1', 'true', 'yes'):
+    if (request.query_params.get('available') or '').lower() in ('1','true','yes'):
         qs = qs.filter(balance_quantity__gt=0)
 
-    # Сортировка
-    order = request.GET.get('order') or 'name'
+    order = request.query_params.get('order') or 'name'
     allowed_orders = {
         'name','-name','author','-author','bbk','-bbk','ISBN','-ISBN',
         'quantity','-quantity','balance_quantity','-balance_quantity',
         'year_published','-year_published'
     }
     if order not in allowed_orders:
-        return JsonResponse({'detail': f'order must be one of {sorted(allowed_orders)}'}, status=400)
+        return _bad_request(f'order must be one of {sorted(allowed_orders)}')
     qs = qs.order_by(order)
 
-    # Пагинация
+    # пагинация
     try:
-        limit = min(max(int(request.GET.get('limit', 100)), 1), 500)
-        offset = max(int(request.GET.get('offset', 0)), 0)
-    except ValueError:
-        return JsonResponse({'detail': 'limit/offset must be integers'}, status=400)
+        limit = int(request.query_params.get('limit', request.parser_context['view'].paginator.default_limit or 100))
+        limit = max(1, min(limit, 500))
+    except Exception:
+        return _bad_request('limit must be integer')
+    try:
+        offset = int(request.query_params.get('offset', 0))
+        offset = max(0, offset)
+    except Exception:
+        return _bad_request('offset must be integer')
 
     total = qs.count()
     agg = qs.aggregate(total_quantity=Sum('quantity'), total_balance=Sum('balance_quantity'))
     items = list(qs[offset:offset+limit])
 
-    # next/prev ссылки
     next_offset = offset + limit if offset + limit < total else None
     prev_offset = offset - limit if offset > 0 else None
 
     data = {
         'school': {
-            'username': user.username,      # напр. "kemelbilim"
-            'bin': user.first_name,         # напр. "200240023403"
-            'email': user.email,            # напр. "kemelbilim@edu.kz"
+            'username': user.username,
+            'bin': user.first_name,
+            'email': user.email,
         },
         'meta': {
             'total': total,
@@ -1770,5 +724,4 @@ def api_school_books(request):
             } for b in items
         ]
     }
-    return JsonResponse(data, safe=True, json_dumps_params={'ensure_ascii': False})
-
+    return Response(data)

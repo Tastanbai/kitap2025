@@ -1,6 +1,8 @@
 from django.urls import path, re_path
 from . import views
-
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView, TokenRefreshView, TokenVerifyView
+)
 app_name = 'myapp'
 
 urlpatterns = [
@@ -25,8 +27,10 @@ urlpatterns = [
     path('select_all_books/', views.select_all_books, name='select_all_books'),
     path('check-isbn/', views.check_isbn, name='check_isbn'),
     path("generate/", views.generate_and_download_barcodes, name="generate_barcodes"),
-    path('api/borrows/', views.api_school_borrows, name='api_school_borrows'),
-    path('api/books/', views.api_school_books, name='api_school_books'),   
-  # path("generate_copies/", views.generate_and_download_copies, name="generate_copies")
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/school/books/', views.api_school_books, name='api_school_books'),
+    path('api/school/borrows/', views.api_school_borrows, name='api_school_borrows'),
 ]
 
